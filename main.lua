@@ -12,8 +12,8 @@ push:setupScreen(gameWidth, gameHeight, windowWidth, windowHeight, {
 })
 
 BLOCKS_PER_EDGE = 20
-GRID_DIMENSION = gameWidth / BLOCKS_PER_EDGE
-GRID_THICKNESS = GRID_DIMENSION / 15
+GRID_DIMENSION = math.floor(gameWidth / BLOCKS_PER_EDGE)
+GRID_THICKNESS = math.floor(GRID_DIMENSION / 10)
 
 BLOCK_OFFSET = GRID_THICKNESS * 0.5
 BLOCK_DIMENSION = GRID_DIMENSION - GRID_THICKNESS
@@ -52,7 +52,7 @@ function love.draw()
 	push:setCanvas("grid_canvas")
 	draw_grid()
 
-	love.graphics.setColor(0, 0.4, 0.4)
+	love.graphics.setColor(0.6, 0.6, 0)
 	love.graphics.rectangle("fill", BLOCK_OFFSET, BLOCK_OFFSET, BLOCK_DIMENSION, BLOCK_DIMENSION)
 	love.graphics.rectangle("fill", BLOCK_OFFSET, BLOCK_OFFSET, BLOCK_DIMENSION, BLOCK_DIMENSION)
 
