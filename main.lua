@@ -39,13 +39,10 @@ BLOCK_CENTER = BLOCK_DIMENSION * 0.5
 local snek = { { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
 
 local function advance_snek(move_x, move_y)
-	for i = #snek, 1, -1 do
-		if i == 1 then
-			snek[1] = { snek[1][1] + move_x, snek[1][2] + move_y }
-		else
-			snek[i] = snek[i - 1]
-		end
+	for i = #snek, 2, -1 do
+		snek[i][1], snek[i][2] = unpack(snek[i - 1])
 	end
+	snek[1] = { snek[1][1] + move_x, snek[1][2] + move_y }
 end
 
 local theta = 0
