@@ -85,7 +85,7 @@ function love.update(dt)
 	input:update()
 
 	local x, y = input:get("move")
-	if x ~= 0 and y ~= 0 then
+	if x ~= 0 and y ~= 0 or x == -move_x or y == -move_y then
 	-- do nothing
 	elseif x ~= 0 then
 		move_x = x
