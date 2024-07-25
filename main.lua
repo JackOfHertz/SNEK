@@ -3,7 +3,7 @@ local baton = require("lib/baton")
 
 local assets = {}
 
-local game_width, game_height = 400, 300
+local game_width, game_height = 480, 300
 local window_width, window_height = love.window.getDesktopDimensions()
 
 push:setupScreen(game_width, game_height, window_width, window_height, {
@@ -35,6 +35,18 @@ GRID_THICKNESS = math.floor(GRID_DIMENSION / 5)
 BLOCK_OFFSET = GRID_THICKNESS * 0.5
 BLOCK_DIMENSION = GRID_DIMENSION - GRID_THICKNESS
 BLOCK_CENTER = BLOCK_DIMENSION * 0.5
+
+local snek = { { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
+
+local function advance_snek(move_x, move_y)
+	for i = #snek, 1, -1 do
+		if i == 1 then
+			snek[1] = { snek[1][1] + move_x, snek[1][2] + move_y }
+		else
+			snek[i] = snek[i - 1]
+		end
+	end
+end
 
 local theta = 0
 local time = 0
@@ -76,7 +88,9 @@ function love.update(dt)
 	input:update()
 
 	local x, y = input:get("move")
-	if x ~= 0 then
+	if x ~= 0 and y ~= 0 then
+	-- do nothing
+	elseif x ~= 0 then
 		move_x = x
 		move_y = 0
 	elseif y ~= 0 then
@@ -84,12 +98,13 @@ function love.update(dt)
 		move_y = y
 	end
 
-	if input_timer > 10 then
-		-- move in move_direction
+	if input_timer > 20 then
+		advance_snek(move_x, move_y)
 		input_timer = 0
 	end
+	input_timer = input_timer + 1
 
-	theta = theta + 0.75 * math.pi * dt
+	theta = theta + 0.5 * math.pi * dt
 	time = time + dt
 	assets.water_shader:send("time", time)
 	effect:send("time", time)
@@ -111,16 +126,16 @@ end
 local function draw_block(x, y)
 	love.graphics.push()
 	love.graphics.setColor(0.7, 0.7, 0)
-	love.graphics.translate(GRID_DIMENSION * (x + 0.5), GRID_DIMENSION * (y + 0.5))
-	love.graphics.rotate(0.15 * math.sin(theta))
+	love.graphics.translate(GRID_DIMENSION * (x - 0.5), GRID_DIMENSION * (y - 0.5))
+	-- love.graphics.rotate(0.15 * math.sin(2 * theta))
 	love.graphics.rectangle("fill", -BLOCK_CENTER, -BLOCK_CENTER, BLOCK_DIMENSION, BLOCK_DIMENSION)
 	love.graphics.pop()
 end
 
 local function draw_snake()
-	draw_block(0, 0)
-	draw_block(1, 0)
-	draw_block(2, 0)
+	for i = 1, #snek do
+		draw_block(unpack(snek[i]))
+	end
 end
 
 function love.draw()
@@ -132,10 +147,13 @@ function love.draw()
 	push:setCanvas("grid_canvas")
 	draw_grid()
 
+	--	push:setShader("snake_canvas", effect)
 	love.graphics.setShader(effect)
 	push:setCanvas("snake_canvas")
 	draw_snake()
+	love.graphics.setShader()
 
+	--	push:setShader("ui_canvas", assets.water_shader)
 	love.graphics.setShader(assets.water_shader)
 	push:setCanvas("ui_canvas")
 	love.graphics.setColor(1, 1, 1)
