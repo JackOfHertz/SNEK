@@ -1,9 +1,10 @@
 local push = require("lib/push")
 local baton = require("lib/baton")
 
+local lg = love.graphics
 local assets = {}
 
-local game_width, game_height = 480, 300
+local game_width, game_height = 512, 242
 local window_width, window_height = love.window.getDesktopDimensions()
 
 push:setupScreen(game_width, game_height, window_width, window_height, {
@@ -28,13 +29,14 @@ local input = baton.new({
 	joystick = love.joystick.getJoysticks()[1],
 })
 
-BLOCKS_PER_EDGE = 30
-GRID_DIMENSION = math.floor(game_width / BLOCKS_PER_EDGE)
-GRID_THICKNESS = math.floor(GRID_DIMENSION / 5)
+GRID_COLUMNS = 30
+GRID_ROWS = 14
+GRID_UNIT = math.floor(game_width / GRID_COLUMNS)
+GRID_THICKNESS = math.floor(GRID_UNIT / 8)
+GRID_MARGIN = GRID_THICKNESS * 0.5
 
-BLOCK_OFFSET = GRID_THICKNESS * 0.5
-BLOCK_DIMENSION = GRID_DIMENSION - GRID_THICKNESS
-BLOCK_CENTER = BLOCK_DIMENSION * 0.5
+BLOCK_UNIT = GRID_UNIT - GRID_THICKNESS
+BLOCK_OFFSET = BLOCK_UNIT * 0.5
 
 local snek = { { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
 
@@ -42,7 +44,7 @@ local function advance_snek(move_x, move_y)
 	for i = #snek, 2, -1 do
 		snek[i][1], snek[i][2] = unpack(snek[i - 1])
 	end
-	snek[1] = { snek[1][1] + move_x, snek[1][2] + move_y }
+	snek[1][1], snek[1][2] = snek[1][1] + move_x, snek[1][2] + move_y
 end
 
 local theta = 0
@@ -53,23 +55,22 @@ function love.resize(w, h)
 end
 
 function love.load()
-	love.graphics.setDefaultFilter("nearest", "nearest", 0)
+	lg.setDefaultFilter("nearest", "nearest", 0)
 
-	local font = love.graphics.newFont("assets/fonts/joystix_monospace.otf", 20)
-	-- font:setFilter("nearest", "nearest")
-	love.graphics.setFont(font)
+	assets.title_font = lg.newFont("assets/fonts/joystix_monospace.otf", 20)
+	assets.option_font = lg.newFont("assets/fonts/joystix_monospace.otf", 12)
 
-	assets.simplex = love.graphics.newImage("shaders/simplex-noise-64.png")
-	assets.water_shader = love.graphics.newShader("shaders/water.glsl")
+	assets.simplex = lg.newImage("shaders/simplex-noise-64.png")
+	assets.water_shader = lg.newShader("shaders/water.glsl")
 	assets.water_shader:send("simplex", assets.simplex)
 
-	assets.rainbow_shader = love.graphics.newShader("shaders/rainbow.glsl")
+	assets.rainbow_shader = lg.newShader("shaders/rainbow.glsl")
 
 	push:setupCanvas({
 		{ name = "base_canvas" },
 		{ name = "grid_canvas" },
 		{ name = "snake_canvas" },
-		{ name = "ui_canvas" },
+		{ name = "ui_canvas", shaders = { assets.rainbow_shader } },
 	})
 end
 
@@ -101,25 +102,27 @@ function love.update(dt)
 end
 
 local function draw_grid()
-	love.graphics.push()
-	love.graphics.clear(0, 0, 0, 0)
-	love.graphics.setBlendMode("alpha")
-	love.graphics.setColor(0.2, 0.2, 0.5)
-	for i = BLOCKS_PER_EDGE, 0, -1 do
-		local line_position = i * GRID_DIMENSION - BLOCK_OFFSET
-		love.graphics.rectangle("fill", 0, line_position, game_width, GRID_THICKNESS)
-		love.graphics.rectangle("fill", line_position, 0, GRID_THICKNESS, game_height)
+	lg.push()
+	lg.clear(0, 0, 0, 0)
+	lg.setBlendMode("alpha")
+	lg.setColor(0.2, 0.2, 0.4)
+	for i = 0, GRID_COLUMNS do
+		lg.rectangle("fill", i * GRID_UNIT, GRID_MARGIN, GRID_THICKNESS, game_height - GRID_THICKNESS)
 	end
-	love.graphics.pop()
+	lg.setColor(0.2, 0.2, 0.4)
+	for i = 0, GRID_ROWS do
+		lg.rectangle("fill", 0, i * GRID_UNIT + GRID_MARGIN, game_width, GRID_THICKNESS)
+	end
+	lg.pop()
 end
 
 local function draw_block(x, y)
-	love.graphics.push()
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.translate(GRID_DIMENSION * (x - 0.5), GRID_DIMENSION * (y - 0.5))
-	-- love.graphics.rotate(0.15 * math.sin(2 * theta))
-	love.graphics.rectangle("fill", -BLOCK_CENTER, -BLOCK_CENTER, BLOCK_DIMENSION, BLOCK_DIMENSION)
-	love.graphics.pop()
+	lg.push()
+	lg.setColor(1, 1, 1)
+	lg.translate(GRID_UNIT * x, GRID_UNIT * y + GRID_MARGIN)
+	-- lg.rotate(0.15 * math.sin(2 * theta))
+	lg.rectangle("fill", GRID_THICKNESS, GRID_THICKNESS, BLOCK_UNIT, BLOCK_UNIT)
+	lg.pop()
 end
 
 local function draw_snake()
@@ -128,37 +131,39 @@ local function draw_snake()
 	end
 end
 
+local function draw_ui()
+	lg.push()
+	lg.setColor(1, 1, 1)
+	lg.setFont(assets.title_font)
+	lg.printf("SNEK", game_width * 0.5, game_height * 0.5, 80, "center", 0.15 * math.sin(theta), 1, 1, 40, 16)
+	lg.setFont(assets.option_font)
+	lg.printf("NEW GAME", game_width * 0.5, game_height * 0.7, 80, "center", 0, 1, 1, 40, 16)
+	lg.printf("SETTINGS", game_width * 0.5, game_height * 0.8, 80, "center", 0, 1, 1, 40, 16)
+	lg.printf("EXIT", game_width * 0.5, game_height * 0.9, 80, "center", 0, 1, 1, 40, 16)
+	lg.pop()
+end
+
 function love.draw()
 	push:start()
 	push:setCanvas("base_canvas")
+	lg.setColor(0.05, 0.05, 0.05)
+	lg.rectangle("fill", 0, 0, game_width, game_height)
 
-	love.graphics.setBlendMode("alpha", "premultiplied")
+	lg.setBlendMode("alpha", "premultiplied")
 
 	push:setCanvas("grid_canvas")
 	draw_grid()
 
-	--	push:setShader("snake_canvas", effect)
-	love.graphics.setShader(assets.rainbow_shader)
 	push:setCanvas("snake_canvas")
+	lg.setShader(assets.rainbow_shader)
 	draw_snake()
-	love.graphics.setShader()
+	lg.setShader()
 
-	--	push:setShader("ui_canvas", assets.water_shader)
-	love.graphics.setShader(assets.water_shader)
+	-- push:setShader("ui_canvas", assets.water_shader)
+	-- push:setShader("ui_canvas", assets.water_shader)
 	push:setCanvas("ui_canvas")
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.printf(
-		"SNEK",
-		game_width * 0.5,
-		game_height * 0.5,
-		80,
-		"center",
-		0.15 * math.sin(theta),
-		1,
-		1,
-		40,
-		16
-	)
+	lg.setShader(assets.water_shader)
+	draw_ui()
 
 	push:finish()
 end
