@@ -53,14 +53,17 @@ function love.resize(w, h)
 end
 
 function love.load()
+	love.graphics.setDefaultFilter("nearest", "nearest", 0)
+
 	local font = love.graphics.newFont("assets/fonts/joystix_monospace.otf", 20)
-	font:setFilter("nearest", "nearest")
+	-- font:setFilter("nearest", "nearest")
 	love.graphics.setFont(font)
 
-	love.graphics.setDefaultFilter("nearest", "nearest", 0)
 	assets.simplex = love.graphics.newImage("shaders/simplex-noise-64.png")
 	assets.water_shader = love.graphics.newShader("shaders/water.glsl")
 	assets.water_shader:send("simplex", assets.simplex)
+
+	assets.rainbow_shader = love.graphics.newShader("shaders/rainbow.glsl")
 
 	push:setupCanvas({
 		{ name = "base_canvas" },
@@ -68,14 +71,6 @@ function love.load()
 		{ name = "snake_canvas" },
 		{ name = "ui_canvas" },
 	})
-
-	effect = love.graphics.newShader([[
-  extern number time;
-  vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
-  {
-    return vec4((1.0+sin(time))/2.0, abs(cos(time)), abs(sin(time)), 1.0);
-  }
-  ]])
 end
 
 local move_x, move_y = 1, 0
@@ -88,11 +83,9 @@ function love.update(dt)
 	if x ~= 0 and y ~= 0 or x == -move_x or y == -move_y then
 	-- do nothing
 	elseif x ~= 0 then
-		move_x = x
-		move_y = 0
+		move_x, move_y = x, 0
 	elseif y ~= 0 then
-		move_x = 0
-		move_y = y
+		move_x, move_y = 0, y
 	end
 
 	if input_timer > 20 then
@@ -104,7 +97,7 @@ function love.update(dt)
 	theta = theta + 0.5 * math.pi * dt
 	time = time + dt
 	assets.water_shader:send("time", time)
-	effect:send("time", time)
+	assets.rainbow_shader:send("time", time)
 end
 
 local function draw_grid()
@@ -122,7 +115,7 @@ end
 
 local function draw_block(x, y)
 	love.graphics.push()
-	love.graphics.setColor(0.7, 0.7, 0)
+	love.graphics.setColor(1, 1, 1)
 	love.graphics.translate(GRID_DIMENSION * (x - 0.5), GRID_DIMENSION * (y - 0.5))
 	-- love.graphics.rotate(0.15 * math.sin(2 * theta))
 	love.graphics.rectangle("fill", -BLOCK_CENTER, -BLOCK_CENTER, BLOCK_DIMENSION, BLOCK_DIMENSION)
@@ -145,7 +138,7 @@ function love.draw()
 	draw_grid()
 
 	--	push:setShader("snake_canvas", effect)
-	love.graphics.setShader(effect)
+	love.graphics.setShader(assets.rainbow_shader)
 	push:setCanvas("snake_canvas")
 	draw_snake()
 	love.graphics.setShader()
