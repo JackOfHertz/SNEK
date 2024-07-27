@@ -38,13 +38,24 @@ GRID_MARGIN = GRID_THICKNESS * 0.5
 BLOCK_UNIT = GRID_UNIT - GRID_THICKNESS
 BLOCK_OFFSET = BLOCK_UNIT * 0.5
 
-local snek = { { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
+local snek = { { 5, 1 }, { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
+local collision = false
 
 local function advance_snek(move_x, move_y)
+	local next_x, next_y = snek[1][1] + move_x, snek[1][2] + move_y
+	-- detect collision with self
+	for i = 2, #snek do
+		if next_x == snek[i - 1][1] and next_y == snek[i - 1][2] then
+			collision = true
+			return
+		end
+	end
+	-- update body segment locations, back to front
 	for i = #snek, 2, -1 do
 		snek[i][1], snek[i][2] = unpack(snek[i - 1])
 	end
-	snek[1][1], snek[1][2] = snek[1][1] + move_x, snek[1][2] + move_y
+	-- update head location
+	snek[1][1], snek[1][2] = next_x, next_y
 end
 
 local theta = 0
@@ -83,13 +94,14 @@ function love.update(dt)
 	local x, y = input:get("move")
 	if x ~= 0 and y ~= 0 or x == -move_x or y == -move_y then
 	-- do nothing
+	-- prevent diagonal movement or 180 deg turn
 	elseif x ~= 0 then
 		move_x, move_y = x, 0
 	elseif y ~= 0 then
 		move_x, move_y = 0, y
 	end
 
-	if input_timer > 20 then
+	if not collision and input_timer > 20 then
 		advance_snek(move_x, move_y)
 		input_timer = 0
 	end
@@ -155,7 +167,9 @@ function love.draw()
 	draw_grid()
 
 	push:setCanvas("snake_canvas")
-	lg.setShader(assets.rainbow_shader)
+	if not collision then
+		lg.setShader(assets.rainbow_shader)
+	end
 	draw_snake()
 	lg.setShader()
 
