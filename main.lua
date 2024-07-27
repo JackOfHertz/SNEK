@@ -1,13 +1,13 @@
 local push = require("lib/push")
 local baton = require("lib/baton")
+require("constants")
 
 local lg = love.graphics
 local assets = {}
 
-local game_width, game_height = 512, 242
 local window_width, window_height = love.window.getDesktopDimensions()
 
-push:setupScreen(game_width, game_height, window_width, window_height, {
+push:setupScreen(GAME_WIDTH, GAME_HEIGHT, window_width, window_height, {
 	canvas = true,
 	fullscreen = false,
 	highdpi = true,
@@ -30,8 +30,8 @@ local input = baton.new({
 })
 
 GRID_COLUMNS = 30
-GRID_ROWS = 14
-GRID_UNIT = math.floor(game_width / GRID_COLUMNS)
+GRID_ROWS = 16
+GRID_UNIT = math.floor(GAME_WIDTH / GRID_COLUMNS)
 GRID_THICKNESS = math.floor(GRID_UNIT / 8)
 GRID_MARGIN = GRID_THICKNESS * 0.5
 
@@ -41,6 +41,8 @@ BLOCK_OFFSET = BLOCK_UNIT * 0.5
 local snek = { { 5, 1 }, { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
 local collision = false
 
+---@param move_x number
+---@param move_y number
 local function advance_snek(move_x, move_y)
 	local next_x, next_y = snek[1][1] + move_x, snek[1][2] + move_y
 	-- detect collision with self
@@ -67,8 +69,9 @@ end
 
 function love.load()
 	lg.setDefaultFilter("nearest", "nearest", 0)
+	lg.setBlendMode("alpha", "premultiplied")
 
-	assets.title_font = lg.newFont("assets/fonts/joystix_monospace.otf", 20)
+	assets.title_font = lg.newFont("assets/fonts/joystix_monospace.otf", 24)
 	assets.option_font = lg.newFont("assets/fonts/joystix_monospace.otf", 12)
 
 	assets.simplex = lg.newImage("shaders/simplex-noise-64.png")
@@ -81,28 +84,29 @@ function love.load()
 		{ name = "base_canvas" },
 		{ name = "grid_canvas" },
 		{ name = "snake_canvas" },
-		{ name = "ui_canvas", shaders = { assets.rainbow_shader } },
+		{ name = "ui_canvas" },
 	})
 end
 
-local move_x, move_y = 1, 0
+local last_move = { 1, 0 }
+local move = { 1, 0 }
 local input_timer = 0
 
 function love.update(dt)
 	input:update()
 
 	local x, y = input:get("move")
-	if x ~= 0 and y ~= 0 or x == -move_x or y == -move_y then
-	-- do nothing
-	-- prevent diagonal movement or 180 deg turn
+	if x ~= 0 and y ~= 0 or x == -last_move[1] or y == -last_move[2] then
+	-- do nothing - prevent diagonal movement or 180 deg turn
 	elseif x ~= 0 then
-		move_x, move_y = x, 0
+		move = { x, 0 }
 	elseif y ~= 0 then
-		move_x, move_y = 0, y
+		move = { 0, y }
 	end
 
 	if not collision and input_timer > 20 then
-		advance_snek(move_x, move_y)
+		advance_snek(unpack(move))
+		last_move = move
 		input_timer = 0
 	end
 	input_timer = input_timer + 1
@@ -119,11 +123,11 @@ local function draw_grid()
 	lg.setBlendMode("alpha")
 	lg.setColor(0.2, 0.2, 0.4)
 	for i = 0, GRID_COLUMNS do
-		lg.rectangle("fill", i * GRID_UNIT, GRID_MARGIN, GRID_THICKNESS, game_height - GRID_THICKNESS)
+		lg.rectangle("fill", i * GRID_UNIT, GRID_MARGIN, GRID_THICKNESS, GAME_HEIGHT - GRID_THICKNESS)
 	end
 	lg.setColor(0.2, 0.2, 0.4)
 	for i = 0, GRID_ROWS do
-		lg.rectangle("fill", 0, i * GRID_UNIT + GRID_MARGIN, game_width, GRID_THICKNESS)
+		lg.rectangle("fill", 0, i * GRID_UNIT + GRID_MARGIN, GAME_WIDTH, GRID_THICKNESS)
 	end
 	lg.pop()
 end
@@ -138,20 +142,30 @@ local function draw_block(x, y)
 end
 
 local function draw_snake()
+	if not collision then
+		lg.setShader(assets.rainbow_shader)
+	end
 	for i = 1, #snek do
 		draw_block(unpack(snek[i]))
 	end
+	lg.setShader()
 end
 
 local function draw_ui()
 	lg.push()
-	lg.setColor(1, 1, 1)
+	lg.setColor(MENU_BACKGROUND)
+	lg.translate(unpack(MENU_OFFSET))
+	lg.rectangle("fill", 0, 0, MENU_WIDTH, MENU_HEIGHT)
+	lg.setShader(assets.water_shader)
+	lg.setColor(MENU_ACTIVE)
 	lg.setFont(assets.title_font)
-	lg.printf("SNEK", game_width * 0.5, game_height * 0.5, 80, "center", 0.15 * math.sin(theta), 1, 1, 40, 16)
+	lg.printf("SNEK", MENU_CENTER[1], MENU_HEIGHT * 0.2, 80, "center", 0.15 * math.sin(theta), 1, 1, 40, 16)
+	lg.setColor(MENU_INACTIVE)
 	lg.setFont(assets.option_font)
-	lg.printf("NEW GAME", game_width * 0.5, game_height * 0.7, 80, "center", 0, 1, 1, 40, 16)
-	lg.printf("SETTINGS", game_width * 0.5, game_height * 0.8, 80, "center", 0, 1, 1, 40, 16)
-	lg.printf("EXIT", game_width * 0.5, game_height * 0.9, 80, "center", 0, 1, 1, 40, 16)
+	lg.printf("NEW GAME", MENU_CENTER[1], MENU_HEIGHT * 0.5, 80, "center", 0, 1, 1, 40, 16)
+	lg.printf("SETTINGS", MENU_CENTER[1], MENU_HEIGHT * 0.7, 80, "center", 0, 1, 1, 40, 16)
+	lg.printf("EXIT", MENU_CENTER[1], MENU_HEIGHT * 0.9, 80, "center", 0, 1, 1, 40, 16)
+	lg.setShader()
 	lg.pop()
 end
 
@@ -159,24 +173,16 @@ function love.draw()
 	push:start()
 	push:setCanvas("base_canvas")
 	lg.setColor(0.05, 0.05, 0.05)
-	lg.rectangle("fill", 0, 0, game_width, game_height)
-
-	lg.setBlendMode("alpha", "premultiplied")
+	lg.rectangle("fill", 0, 0, GAME_WIDTH, GAME_HEIGHT)
 
 	push:setCanvas("grid_canvas")
 	draw_grid()
 
 	push:setCanvas("snake_canvas")
-	if not collision then
-		lg.setShader(assets.rainbow_shader)
-	end
 	draw_snake()
-	lg.setShader()
 
 	-- push:setShader("ui_canvas", assets.water_shader)
-	-- push:setShader("ui_canvas", assets.water_shader)
 	push:setCanvas("ui_canvas")
-	lg.setShader(assets.water_shader)
 	draw_ui()
 
 	push:finish()
