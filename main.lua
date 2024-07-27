@@ -1,6 +1,7 @@
 local push = require("lib/push")
 local baton = require("lib/baton")
 require("constants")
+local ui = require("ui")
 
 local lg = love.graphics
 local assets = {}
@@ -28,15 +29,6 @@ local input = baton.new({
 	},
 	joystick = love.joystick.getJoysticks()[1],
 })
-
-GRID_COLUMNS = 30
-GRID_ROWS = 16
-GRID_UNIT = math.floor(GAME_WIDTH / GRID_COLUMNS)
-GRID_THICKNESS = math.floor(GRID_UNIT / 8)
-GRID_MARGIN = GRID_THICKNESS * 0.5
-
-BLOCK_UNIT = GRID_UNIT - GRID_THICKNESS
-BLOCK_OFFSET = BLOCK_UNIT * 0.5
 
 local snek = { { 5, 1 }, { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
 local collision = false
@@ -113,6 +105,8 @@ function love.update(dt)
 
 	theta = theta + 0.5 * math.pi * dt
 	time = time + dt
+
+	-- update time-based shaders
 	assets.water_shader:send("time", time)
 	assets.rainbow_shader:send("time", time)
 end
@@ -142,29 +136,13 @@ local function draw_block(x, y)
 end
 
 local function draw_snake()
+	lg.push()
 	if not collision then
 		lg.setShader(assets.rainbow_shader)
 	end
 	for i = 1, #snek do
 		draw_block(unpack(snek[i]))
 	end
-	lg.setShader()
-end
-
-local function draw_ui()
-	lg.push()
-	lg.setColor(MENU_BACKGROUND)
-	lg.translate(unpack(MENU_OFFSET))
-	lg.rectangle("fill", 0, 0, MENU_WIDTH, MENU_HEIGHT)
-	lg.setShader(assets.water_shader)
-	lg.setColor(MENU_ACTIVE)
-	lg.setFont(assets.title_font)
-	lg.printf("SNEK", MENU_CENTER[1], MENU_HEIGHT * 0.2, 80, "center", 0.15 * math.sin(theta), 1, 1, 40, 16)
-	lg.setColor(MENU_INACTIVE)
-	lg.setFont(assets.option_font)
-	lg.printf("NEW GAME", MENU_CENTER[1], MENU_HEIGHT * 0.5, 80, "center", 0, 1, 1, 40, 16)
-	lg.printf("SETTINGS", MENU_CENTER[1], MENU_HEIGHT * 0.7, 80, "center", 0, 1, 1, 40, 16)
-	lg.printf("EXIT", MENU_CENTER[1], MENU_HEIGHT * 0.9, 80, "center", 0, 1, 1, 40, 16)
 	lg.setShader()
 	lg.pop()
 end
@@ -183,7 +161,7 @@ function love.draw()
 
 	-- push:setShader("ui_canvas", assets.water_shader)
 	push:setCanvas("ui_canvas")
-	draw_ui()
+	ui.draw(theta, assets)
 
 	push:finish()
 end
