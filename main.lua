@@ -1,5 +1,6 @@
 local push = require("lib/push")
 local baton = require("lib/baton")
+
 require("constants")
 local ui = require("ui")
 
@@ -33,20 +34,19 @@ local input = baton.new({
 local snek = { { 5, 1 }, { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
 local collision = false
 
+---advance snake state
 ---@param move_x number
 ---@param move_y number
 local function advance_snek(move_x, move_y)
 	local next_x, next_y = snek[1][1] + move_x, snek[1][2] + move_y
-	-- detect collision with self
-	for i = 2, #snek do
-		if next_x == snek[i - 1][1] and next_y == snek[i - 1][2] then
+	for i = #snek, 2, -1 do
+		-- update body segment locations, back to front
+		snek[i][1], snek[i][2] = unpack(snek[i - 1])
+		-- detect collision with self
+		if next_x == snek[i][1] and next_y == snek[i][2] then
 			collision = true
 			return
 		end
-	end
-	-- update body segment locations, back to front
-	for i = #snek, 2, -1 do
-		snek[i][1], snek[i][2] = unpack(snek[i - 1])
 	end
 	-- update head location
 	snek[1][1], snek[1][2] = next_x, next_y
@@ -89,14 +89,13 @@ function love.update(dt)
 
 	local x, y = input:get("move")
 	if x ~= 0 and y ~= 0 or x == -last_move[1] or y == -last_move[2] then
-	-- do nothing - prevent diagonal movement or 180 deg turn
-	elseif x ~= 0 then
-		move = { x, 0 }
-	elseif y ~= 0 then
-		move = { 0, y }
+		-- do nothing - prevent diagonal movement or 180 deg turn
+		move = last_move
+	else
+		move = { x, y }
 	end
 
-	if not collision and input_timer > 20 then
+	if not collision and input_timer > 10 then
 		advance_snek(unpack(move))
 		last_move = move
 		input_timer = 0
@@ -126,7 +125,11 @@ local function draw_grid()
 	lg.pop()
 end
 
-local function draw_block(x, y)
+---draw block at matrix index defined by x, y
+---@param x number
+---@param y number
+---@param theta? number
+local function draw_block(x, y, theta)
 	lg.push()
 	lg.setColor(1, 1, 1)
 	lg.translate(GRID_UNIT * x, GRID_UNIT * y + GRID_MARGIN)
@@ -135,13 +138,15 @@ local function draw_block(x, y)
 	lg.pop()
 end
 
-local function draw_snake()
+---draw snake
+---@param theta number
+local function draw_snake(theta)
 	lg.push()
 	if not collision then
 		lg.setShader(assets.rainbow_shader)
 	end
 	for i = 1, #snek do
-		draw_block(unpack(snek[i]))
+		draw_block(snek[i][1], snek[i][2], collision and 0 or (theta - i / 5))
 	end
 	lg.setShader()
 	lg.pop()
@@ -157,7 +162,7 @@ function love.draw()
 	draw_grid()
 
 	push:setCanvas("snake_canvas")
-	draw_snake()
+	draw_snake(theta)
 
 	-- push:setShader("ui_canvas", assets.water_shader)
 	push:setCanvas("ui_canvas")
