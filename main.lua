@@ -116,11 +116,11 @@ local function draw_grid()
 	lg.setBlendMode("alpha")
 	lg.setColor(0.2, 0.2, 0.4)
 	for i = 0, GRID_COLUMNS do
-		lg.rectangle("fill", i * GRID_UNIT, GRID_MARGIN, GRID_THICKNESS, GAME_HEIGHT - GRID_THICKNESS)
+		lg.rectangle("fill", i * GRID_UNIT, 0, GRID_THICKNESS, GRID_HEIGHT)
 	end
 	lg.setColor(0.2, 0.2, 0.4)
 	for i = 0, GRID_ROWS do
-		lg.rectangle("fill", 0, i * GRID_UNIT + GRID_MARGIN, GAME_WIDTH, GRID_THICKNESS)
+		lg.rectangle("fill", 0, i * GRID_UNIT, GRID_WIDTH, GRID_THICKNESS)
 	end
 	lg.pop()
 end
@@ -132,9 +132,9 @@ end
 local function draw_block(x, y, theta)
 	lg.push()
 	lg.setColor(1, 1, 1)
-	lg.translate(GRID_UNIT * x, GRID_UNIT * y + GRID_MARGIN)
-	-- lg.rotate(0.15 * math.sin(2 * theta))
-	lg.rectangle("fill", GRID_THICKNESS, GRID_THICKNESS, BLOCK_UNIT, BLOCK_UNIT)
+	lg.translate(GRID_UNIT * x + GRID_OFFSET, GRID_UNIT * y + GRID_OFFSET)
+	lg.rotate(theta and 0.15 * math.sin(2 * theta) or 0)
+	lg.rectangle("fill", BLOCK_OFFSET, BLOCK_OFFSET, BLOCK_UNIT, BLOCK_UNIT)
 	lg.pop()
 end
 
