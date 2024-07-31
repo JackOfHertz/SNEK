@@ -29,13 +29,7 @@ SCREENS = {
 	SNAKE = 1,
 }
 
----@enum MENUS
-MENUS = {
-	MAIN = 1,
-	SETTINGS = 2,
-}
-
 ---state table
 STATE = {
-	menus = { MENUS.MAIN },
+	menus = { 1 }, -- main menu
 }

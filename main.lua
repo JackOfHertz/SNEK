@@ -1,5 +1,8 @@
-local push = require("lib/push")
-local baton = require("lib/baton")
+---global
+--TODO: need to move
+push = require("lib.push")
+
+local baton = require("lib.baton")
 
 require("constants")
 local ui = require("ui")
