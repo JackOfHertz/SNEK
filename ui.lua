@@ -159,7 +159,7 @@ local function draw_menu(menu, theta, assets)
 		lg.printf(
 			option.name,
 			menu_center[1],
-			menu_height * (0.3 + 0.2 * i),
+			menu_height * (0.3 + (0.6 * i / #menu.options)),
 			menu_width,
 			"center",
 			0,
