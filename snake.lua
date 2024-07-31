@@ -3,6 +3,7 @@ require("globals")
 local lg = love.graphics
 
 local snake = {}
+local tween_group = flux.group()
 
 ---generate grid table with primitives
 ---@param columns number
@@ -47,7 +48,9 @@ local function advance_snake(grid, move_x, move_y)
 	for i = #snek, 2, -1 do
 		local prev = snek[i - 1]
 		-- update body segment locations, back to front
-		flux.to(snek[i], delta_time * 0.3, { x = prev.x, y = prev.y }):delay(((i - 1) / (#snek * 2)) * delta_time)
+		tween_group
+			:to(snek[i], delta_time * 0.3, { x = prev.x, y = prev.y })
+			:delay(((i - 1) / (#snek * 2)) * delta_time)
 		-- detect collision with self
 		if next_x == prev.x and next_y == prev.y then
 			collision = true
@@ -55,7 +58,7 @@ local function advance_snake(grid, move_x, move_y)
 		end
 	end
 	-- update head location
-	flux.to(snek[1], delta_time * 0.3, {
+	tween_group:to(snek[1], delta_time * 0.3, {
 		x = (next_x - 1) % grid.columns + 1,
 		y = (next_y - 1) % grid.rows + 1,
 	})
@@ -69,6 +72,7 @@ function snake.update(dt)
 	if STATE.paused then
 		return
 	end
+	tween_group:update(dt)
 	local x, y = input:get("move")
 	if (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_move[1] and y == -last_move[2]) then
 		-- do nothing - prevent diagonal movement or 180 deg turn
