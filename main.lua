@@ -115,11 +115,10 @@ local function draw_grid()
 	lg.push()
 	lg.clear(0, 0, 0, 0)
 	lg.setBlendMode("alpha")
-	lg.setColor(0.2, 0.2, 0.4)
+	lg.setColor(0.2, 0.2, 0.4, 0.5)
 	for i = 0, GRID_COLUMNS do
 		lg.rectangle("fill", i * GRID_UNIT, 0, GRID_THICKNESS, GRID_HEIGHT)
 	end
-	lg.setColor(0.2, 0.2, 0.4)
 	for i = 0, GRID_ROWS do
 		lg.rectangle("fill", 0, i * GRID_UNIT, GRID_WIDTH, GRID_THICKNESS)
 	end
