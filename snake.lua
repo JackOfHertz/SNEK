@@ -117,7 +117,7 @@ local function draw_cell(grid, x, y, theta)
 	lg.push()
 	lg.setColor(1, 1, 1)
 	lg.translate(grid.unit * (x - 0.5), grid.unit * (y - 0.5))
-	lg.rotate(theta and 0.15 * math.sin(2 * theta) or 0)
+	lg.rotate(0.2 * math.sin(2 * theta))
 	lg.rectangle("fill", grid.cell.offset, grid.cell.offset, grid.cell.unit, grid.cell.unit)
 	lg.pop()
 end
@@ -126,6 +126,7 @@ end
 ---@param theta number
 ---@param assets table
 function snake.draw(theta, assets)
+	theta = theta or 0
 	lg.push()
 	draw_grid(snake_grid)
 	if not collision then
