@@ -34,6 +34,7 @@ local time = 0
 
 function love.update(dt)
 	input:update()
+	flux.update(dt)
 
 	theta = theta + 0.5 * math.pi * dt
 	time = time + dt

@@ -6,12 +6,12 @@ local lg = love.graphics
 local ui = {}
 
 --- menu dimensions
-MENU_WIDTH, MENU_HEIGHT = GAME_WIDTH * 0.6, GAME_HEIGHT * 0.6
-MENU_OFFSET = { (GAME_WIDTH - MENU_WIDTH) * 0.5, (GAME_HEIGHT - MENU_HEIGHT) * 0.5 }
-MENU_CENTER = { MENU_WIDTH * 0.5, MENU_HEIGHT * 0.5 }
+local menu_width, menu_height = GAME_WIDTH * 0.6, GAME_HEIGHT * 0.6
+local menu_offset = { (GAME_WIDTH - menu_width) * 0.5, (GAME_HEIGHT - menu_height) * 0.5 }
+local menu_center = { menu_width * 0.5, menu_height * 0.5 }
 
----@enum MENU_COLORS
-MENU_COLORS = {
+---@enum menu_colors
+local menu_colors = {
 	background = { 0, 0, 0, 0.3 },
 	active = { 1, 1, 1, 1 },
 	inactive = { 1, 1, 1, 0.7 },
@@ -38,7 +38,6 @@ local function main_menu()
 end
 
 local function pause_menu()
-	STATE.paused = true
 	table.insert(STATE.menus, PAUSE_MENU.menu_index)
 end
 
@@ -65,6 +64,16 @@ MAIN_MENU = {
 	active_index = 1,
 }
 
+SETTINGS_MENU = {
+	title = "SETTINGS",
+	menu_index = 2,
+	options = {
+		{ name = "TOGGLE FULLSCREEN", event = toggle_fullscreen },
+		{ name = "BACK", event = menu_back },
+	},
+	active_index = 1,
+}
+
 PAUSE_MENU = {
 	title = "PAUSED",
 	menu_index = 3,
@@ -73,17 +82,6 @@ PAUSE_MENU = {
 		{ name = "RESTART", event = new_game },
 		{ name = "SETTINGS", event = settings },
 		{ name = "QUIT", event = main_menu },
-	},
-	active_index = 1,
-}
-
----settings menu struct
-SETTINGS_MENU = {
-	title = "SETTINGS",
-	menu_index = 2,
-	options = {
-		{ name = "TOGGLE FULLSCREEN", event = toggle_fullscreen },
-		{ name = "BACK", event = menu_back },
 	},
 	active_index = 1,
 }
@@ -123,26 +121,26 @@ local function draw_menu(menu, theta, assets)
 	lg.push()
 
 	-- background
-	lg.setColor(MENU_COLORS.background)
-	lg.translate(unpack(MENU_OFFSET))
-	lg.rectangle("fill", 0, 0, MENU_WIDTH, MENU_HEIGHT + 0.25 * #menu.options)
+	lg.setColor(menu_colors.background)
+	lg.translate(unpack(menu_offset))
+	lg.rectangle("fill", 0, 0, menu_width, menu_height + 0.25 * #menu.options)
 
 	-- text
 	lg.setShader(assets.water_shader)
 
 	-- title
 	lg.setFont(assets.title_font)
-	lg.setColor(MENU_COLORS.active)
+	lg.setColor(menu_colors.active)
 	lg.printf(
 		menu.title,
-		MENU_CENTER[1],
-		MENU_HEIGHT * 0.2,
-		MENU_WIDTH,
+		menu_center[1],
+		menu_height * 0.2,
+		menu_width,
 		"center",
 		0.15 * math.sin(theta),
 		1,
 		1,
-		MENU_CENTER[1],
+		menu_center[1],
 		16
 	)
 
@@ -153,21 +151,21 @@ local function draw_menu(menu, theta, assets)
 		local active = (i == menu.active_index)
 		if active then
 			lg.setShader(assets.water_shader)
-			lg.setColor(MENU_COLORS.active)
+			lg.setColor(menu_colors.active)
 		else
 			lg.setShader()
-			lg.setColor(MENU_COLORS.inactive)
+			lg.setColor(menu_colors.inactive)
 		end
 		lg.printf(
 			option.name,
-			MENU_CENTER[1],
-			MENU_HEIGHT * (0.3 + 0.2 * i),
-			MENU_WIDTH,
+			menu_center[1],
+			menu_height * (0.3 + 0.2 * i),
+			menu_width,
 			"center",
 			0,
 			1,
 			1,
-			MENU_CENTER[1],
+			menu_center[1],
 			16
 		)
 	end

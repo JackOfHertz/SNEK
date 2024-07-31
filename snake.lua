@@ -4,41 +4,65 @@ local lg = love.graphics
 
 local snake = {}
 
---- snake grid
-GRID_COLUMNS = 30
-GRID_ROWS = 16
-GRID_UNIT = math.floor(GAME_WIDTH / GRID_COLUMNS)
-GRID_WIDTH, GRID_HEIGHT = GAME_WIDTH, GRID_ROWS * GRID_UNIT
-GRID_OFFSET = GRID_UNIT * 0.5
-GRID_THICKNESS = math.floor(GRID_UNIT / 8)
+---generate grid table with primitives
+---@param columns number
+---@param rows number
+---@param width number
+---@param line_width_pct number
+---@return table
+local function generate_grid(columns, rows, width, line_width_pct)
+	local unit = math.floor(width / columns)
+	local line_width = math.floor(unit * line_width_pct)
+	return {
+		columns = columns,
+		rows = rows,
+		width = width,
+		unit = unit,
+		line_width = line_width,
+		height = rows * unit + line_width,
+		cell = {
+			unit = unit - line_width,
+			offset = line_width - (unit * 0.5),
+		},
+	}
+end
+local snake_grid = generate_grid(30, 16, GAME_WIDTH, 0.125)
 
-BLOCK_UNIT = GRID_UNIT - GRID_THICKNESS
-BLOCK_OFFSET = (GRID_THICKNESS - BLOCK_UNIT) * 0.5
-
-local snek = { { 5, 1 }, { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
+local snek = {
+	{ x = 5, y = 1 },
+	{ x = 4, y = 1 },
+	{ x = 3, y = 1 },
+	{ x = 2, y = 1 },
+	{ x = 1, y = 1 },
+}
 local collision = false
+local delta_time = 0.3
 
 ---advance snake state
+---@param grid table
 ---@param move_x number
 ---@param move_y number
-local function advance_snake(move_x, move_y)
-	local next_x, next_y = snek[1][1] + move_x, snek[1][2] + move_y
+local function advance_snake(grid, move_x, move_y)
+	local next_x, next_y = snek[1].x + move_x, snek[1].y + move_y
 	for i = #snek, 2, -1 do
+		local prev = snek[i - 1]
 		-- update body segment locations, back to front
-		snek[i][1], snek[i][2] = unpack(snek[i - 1])
+		flux.to(snek[i], delta_time * 0.3, { x = prev.x, y = prev.y }):delay(((i - 1) / (#snek * 2)) * delta_time)
 		-- detect collision with self
-		if next_x == snek[i][1] and next_y == snek[i][2] then
+		if next_x == prev.x and next_y == prev.y then
 			collision = true
 			return
 		end
 	end
 	-- update head location
-	snek[1][1], snek[1][2] = next_x % GRID_COLUMNS, next_y % GRID_ROWS
+	flux.to(snek[1], delta_time * 0.3, {
+		x = (next_x - 1) % grid.columns + 1,
+		y = (next_y - 1) % grid.rows + 1,
+	})
 end
 
 local last_move = { 1, 0 }
 local next_move = { 1, 0 }
-local move = { 1, 0 }
 local timer = 0
 
 function snake.update(dt)
@@ -51,41 +75,42 @@ function snake.update(dt)
 	else
 		next_move = { x, y }
 	end
-	move = next_move
 
-	if not collision and timer >= 0.3 then
-		advance_snake(unpack(move))
-		last_move = move
-		timer = timer - 0.3
+	if not collision and timer >= delta_time then
+		advance_snake(snake_grid, next_move[1], next_move[2])
+		last_move = next_move
+		timer = timer - delta_time
 	end
-
 	timer = timer + dt
 end
 
-local function draw_grid()
+---draw grid specified by grid table
+---@param grid table
+local function draw_grid(grid)
 	lg.push()
 	lg.clear(0, 0, 0, 0)
 	lg.setBlendMode("alpha")
 	lg.setColor(0.2, 0.2, 0.4, 0.5)
-	for i = 0, GRID_COLUMNS do
-		lg.rectangle("fill", i * GRID_UNIT, 0, GRID_THICKNESS, GRID_HEIGHT)
+	for i = 0, grid.columns do
+		lg.rectangle("fill", i * grid.unit, 0, grid.line_width, grid.height)
 	end
-	for i = 0, GRID_ROWS do
-		lg.rectangle("fill", 0, i * GRID_UNIT, GRID_WIDTH, GRID_THICKNESS)
+	for i = 0, grid.rows do
+		lg.rectangle("fill", 0, i * grid.unit, grid.width, grid.line_width)
 	end
 	lg.pop()
 end
 
----draw block at matrix index defined by x, y
+---draw cell at grid index defined by x, y
+---@param grid table
 ---@param x number horizontal index
 ---@param y number vertical index
 ---@param theta? number rotation in radians
-local function draw_block(x, y, theta)
+local function draw_cell(grid, x, y, theta)
 	lg.push()
 	lg.setColor(1, 1, 1)
-	lg.translate(GRID_UNIT * x + GRID_OFFSET, GRID_UNIT * y + GRID_OFFSET)
+	lg.translate(grid.unit * (x - 0.5), grid.unit * (y - 0.5))
 	lg.rotate(theta and 0.15 * math.sin(2 * theta) or 0)
-	lg.rectangle("fill", BLOCK_OFFSET, BLOCK_OFFSET, BLOCK_UNIT, BLOCK_UNIT)
+	lg.rectangle("fill", grid.cell.offset, grid.cell.offset, grid.cell.unit, grid.cell.unit)
 	lg.pop()
 end
 
@@ -94,12 +119,12 @@ end
 ---@param assets table
 function snake.draw(theta, assets)
 	lg.push()
-	draw_grid()
+	draw_grid(snake_grid)
 	if not collision then
 		lg.setShader(assets.rainbow_shader)
 	end
 	for i = 1, #snek do
-		draw_block(snek[i][1], snek[i][2], collision and 0 or (theta - i / 5))
+		draw_cell(snake_grid, snek[i].x, snek[i].y, collision and 0 or (theta - i / 5))
 	end
 	lg.setShader()
 	lg.pop()
