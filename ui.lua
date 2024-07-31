@@ -20,6 +20,10 @@ function settings()
 	table.insert(STATE.menus, SETTINGS_MENU.menu_index)
 end
 
+function main_menu()
+	table.insert(STATE.menus, MAIN_MENU.menu_index)
+end
+
 function exit()
 	love.event.quit(0)
 end
@@ -149,8 +153,15 @@ local function update_menu(menu)
 end
 
 function ui.update(input)
+	local back = input:pressed("back")
 	if not STATE.menus[1] then
+		if back then
+			main_menu()
+		end
 		return
+	end
+	if back then
+		close_menu()
 	end
 	for _, menu in ipairs(menus) do
 		update_menu(menu)
