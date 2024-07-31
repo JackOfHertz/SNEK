@@ -23,10 +23,11 @@ end
 MAIN_MENU = {
 	title = "SNEK",
 	options = {
-		{ name = "NEW GAME", active = true, event = "new_game" },
-		{ name = "SETTINGS", active = false, event = "settings" },
-		{ name = "EXIT", active = false, event = "exit" },
+		{ name = "NEW GAME", event = "new_game" },
+		{ name = "SETTINGS", event = "settings" },
+		{ name = "EXIT", event = "exit" },
 	},
+	active_index = 0,
 }
 
 ---draw main menu
@@ -46,19 +47,40 @@ local function draw_main_menu(theta, assets)
 	-- title
 	lg.setFont(assets.title_font)
 	lg.setColor(MENU_COLORS.active)
-	lg.printf("SNEK", MENU_CENTER[1], MENU_HEIGHT * 0.2, 80, "center", 0.15 * math.sin(theta), 1, 1, 40, 16)
+	lg.printf(MAIN_MENU.title, MENU_CENTER[1], MENU_HEIGHT * 0.2, 80, "center", 0.15 * math.sin(theta), 1, 1, 40, 16)
 
 	-- options
 	lg.setFont(assets.option_font)
 	for i = 1, #MAIN_MENU.options do
 		local option = MAIN_MENU.options[i]
-		lg.setColor(option.active and MENU_COLORS.active or MENU_COLORS.inactive)
+		local active = i == (MAIN_MENU.active_index + 1)
+		if active then
+			lg.setShader(assets.water_shader)
+			lg.setColor(MENU_COLORS.active)
+		else
+			lg.setShader()
+			lg.setColor(MENU_COLORS.inactive)
+		end
 		lg.printf(option.name, MENU_CENTER[1], MENU_HEIGHT * (0.3 + 0.2 * i), 80, "center", 0, 1, 1, 40, 16)
 	end
 
 	-- cleanup
 	lg.setShader()
 	lg.pop()
+end
+
+function ui.update(input)
+	local down, up = input:pressed("down"), input:pressed("up")
+	if STATE.menus[#STATE.menus] == MENUS.MAIN then
+		local shift = 0
+		if down then
+			shift = 1
+		elseif up then
+			shift = -1
+		end
+		MAIN_MENU.active_index = ((MAIN_MENU.active_index + shift) % #MAIN_MENU.options)
+		love.event.push(MAIN_MENU.options[MAIN_MENU.active_index].event)
+	end
 end
 
 function ui.draw(theta, assets)

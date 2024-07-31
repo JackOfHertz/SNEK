@@ -24,6 +24,8 @@ local input = baton.new({
 		up = { "key:up", "key:w", "axis:lefty-", "button:dpup" },
 		down = { "key:down", "key:s", "axis:lefty+", "button:dpdown" },
 		action = { "key:x", "button:a" },
+		back = { "key:escape", "button:back" },
+		confirm = { "key:enter", "key:space", "key:x", "button:a" },
 	},
 	pairs = {
 		move = { "left", "right", "up", "down" },
@@ -109,6 +111,8 @@ function love.update(dt)
 	-- update time-based shaders
 	assets.water_shader:send("time", time)
 	assets.rainbow_shader:send("time", time)
+
+	ui.update(input)
 end
 
 local function draw_grid()
