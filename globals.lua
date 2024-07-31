@@ -3,7 +3,7 @@ local baton = require("lib.baton")
 flux = require("lib.flux")
 
 ---game screen dimensions
-GAME_WIDTH, GAME_HEIGHT = 512, 288
+GAME_WIDTH, GAME_HEIGHT = 320, 180
 
 ---@enum SCREENS
 SCREENS = {

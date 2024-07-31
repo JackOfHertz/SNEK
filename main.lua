@@ -13,8 +13,8 @@ function love.load()
 	lg.setDefaultFilter("nearest", "nearest", 0)
 	lg.setBlendMode("alpha", "premultiplied")
 
-	assets.title_font = lg.newFont("assets/fonts/joystix_monospace.otf", 24)
-	assets.option_font = lg.newFont("assets/fonts/joystix_monospace.otf", 12)
+	assets.title_font = lg.newFont("assets/fonts/joystix_monospace.otf", 16)
+	assets.option_font = lg.newFont("assets/fonts/joystix_monospace.otf", 10)
 
 	assets.simplex = lg.newImage("shaders/simplex-noise-64.png")
 	assets.water_shader = lg.newShader("shaders/water.glsl")
