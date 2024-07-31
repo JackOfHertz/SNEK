@@ -24,7 +24,7 @@ function love.load()
 
 	push:setupCanvas({
 		{ name = "base_canvas" },
-		{ name = "snake_canvas" },
+		{ name = "game_canvas" },
 		{ name = "ui_canvas" },
 	})
 end
@@ -53,7 +53,7 @@ function love.draw()
 	lg.setColor(0.05, 0.05, 0.05)
 	lg.rectangle("fill", 0, 0, GAME_WIDTH, GAME_HEIGHT)
 
-	push:setCanvas("snake_canvas")
+	push:setCanvas("game_canvas")
 	snake.draw(theta, assets)
 
 	push:setCanvas("ui_canvas")
