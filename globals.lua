@@ -1,9 +1,23 @@
 push = require("lib.push")
 local baton = require("lib.baton")
 
-local window_width, window_height = love.window.getDesktopDimensions()
+--- game screen dimensions
+GAME_WIDTH, GAME_HEIGHT = 512, 288
 
-push:setupScreen(GAME_WIDTH, GAME_HEIGHT, window_width, window_height, {
+---@enum SCREENS
+SCREENS = {
+	SNAKE = 1,
+}
+
+---state table
+STATE = {
+	menus = { 1 }, -- main menu
+	paused = false,
+}
+
+WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions()
+
+push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
 	canvas = true,
 	fullscreen = false,
 	highdpi = true,

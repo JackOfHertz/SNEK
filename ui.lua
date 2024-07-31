@@ -1,4 +1,3 @@
-require("constants")
 require("globals")
 
 local next = next
@@ -6,37 +5,55 @@ local lg = love.graphics
 
 local ui = {}
 
+--- menu dimensions
+MENU_WIDTH, MENU_HEIGHT = GAME_WIDTH * 0.6, GAME_HEIGHT * 0.6
+MENU_OFFSET = { (GAME_WIDTH - MENU_WIDTH) * 0.5, (GAME_HEIGHT - MENU_HEIGHT) * 0.5 }
+MENU_CENTER = { MENU_WIDTH * 0.5, MENU_HEIGHT * 0.5 }
+
+---@enum MENU_COLORS
+MENU_COLORS = {
+	background = { 0, 0, 0, 0.3 },
+	active = { 1, 1, 1, 1 },
+	inactive = { 1, 1, 1, 0.7 },
+}
+
 local function close_menu()
 	if next(STATE.menus) then
 		table.remove(STATE.menus)
 	end
 end
 
-function new_game()
+local function new_game()
 	close_menu()
 end
 
-function settings()
+local function settings()
 	table.insert(STATE.menus, SETTINGS_MENU.menu_index)
 end
 
-function main_menu()
+local function main_menu()
+	STATE.paused = false
+	close_menu()
 	table.insert(STATE.menus, MAIN_MENU.menu_index)
 end
 
-function exit()
+local function pause_menu()
+	STATE.paused = true
+	table.insert(STATE.menus, PAUSE_MENU.menu_index)
+end
+
+local function exit()
 	love.event.quit(0)
 end
 
-function toggle_fullscreen()
+local function toggle_fullscreen()
 	push:switchFullscreen(512, 288)
 end
 
-function back()
+local function menu_back()
 	close_menu()
 end
 
----main menu struct
 MAIN_MENU = {
 	title = "SNEK",
 	menu_index = 1,
@@ -48,18 +65,53 @@ MAIN_MENU = {
 	active_index = 1,
 }
 
+PAUSE_MENU = {
+	title = "PAUSED",
+	menu_index = 3,
+	options = {
+		{ name = "CONTINUE", event = close_menu },
+		{ name = "RESTART", event = new_game },
+		{ name = "SETTINGS", event = settings },
+		{ name = "QUIT", event = main_menu },
+	},
+	active_index = 1,
+}
+
 ---settings menu struct
 SETTINGS_MENU = {
 	title = "SETTINGS",
 	menu_index = 2,
 	options = {
 		{ name = "TOGGLE FULLSCREEN", event = toggle_fullscreen },
-		{ name = "BACK", event = back },
+		{ name = "BACK", event = menu_back },
 	},
 	active_index = 1,
 }
 
-local menus = { MAIN_MENU, SETTINGS_MENU }
+local menus = { MAIN_MENU, SETTINGS_MENU, PAUSE_MENU }
+
+---confirm_buffer accounts for baton reading double inputs
+-- TODO: submit bug to baton
+local confirm_buffer = 0
+
+local function update_menu(menu)
+	if STATE.menus[#STATE.menus] ~= menu.menu_index then
+		return
+	end
+	if menu.open then
+		menu.open()
+	end
+	local down, up = input:pressed("down"), input:pressed("up")
+	local confirm = input:released("confirm")
+	menu.active_index = ((menu.active_index + (down and 1 or up and -1 or 0)) % #menu.options)
+	if menu.active_index == 0 then
+		menu.active_index = #menu.options
+	end
+	if confirm and confirm_buffer >= 5 then
+		menu.options[menu.active_index].event()
+		confirm_buffer = 0
+	end
+end
 
 ---draw menu
 ---@param theta number
@@ -73,7 +125,7 @@ local function draw_menu(menu, theta, assets)
 	-- background
 	lg.setColor(MENU_COLORS.background)
 	lg.translate(unpack(MENU_OFFSET))
-	lg.rectangle("fill", 0, 0, MENU_WIDTH, MENU_HEIGHT)
+	lg.rectangle("fill", 0, 0, MENU_WIDTH, MENU_HEIGHT + 0.25 * #menu.options)
 
 	-- text
 	lg.setShader(assets.water_shader)
@@ -125,42 +177,16 @@ local function draw_menu(menu, theta, assets)
 	lg.pop()
 end
 
----confirm_buffer accounts for baton reading double inputs
--- TODO: submit bug to baton
-local confirm_buffer = 0
-
-local function update_menu(menu)
-	if STATE.menus[#STATE.menus] ~= menu.menu_index then
-		return
-	end
-	local down, up = input:pressed("down"), input:pressed("up")
-	local confirm = input:released("confirm")
-	local shift = 0
-	if down then
-		shift = 1
-	elseif up then
-		shift = -1
-	end
-	menu.active_index = ((menu.active_index + shift) % #menu.options)
-	if menu.active_index == 0 then
-		menu.active_index = #menu.options
-	end
-	if confirm and confirm_buffer >= 5 then
-		print(confirm, "confirm")
-		menu.options[menu.active_index].event()
-		confirm_buffer = 0
-	end
-end
-
-function ui.update(input)
+function ui.update()
 	local back = input:pressed("back")
 	if not STATE.menus[1] then
-		if back then
-			main_menu()
+		STATE.paused = back
+		if STATE.paused then
+			pause_menu()
 		end
 		return
 	end
-	if back then
+	if back and not (STATE.menus[#STATE.menus] == MAIN_MENU.menu_index) then
 		close_menu()
 	end
 	for _, menu in ipairs(menus) do
