@@ -49,7 +49,7 @@ local function advance_snek(move_x, move_y)
 		end
 	end
 	-- update head location
-	snek[1][1], snek[1][2] = next_x, next_y
+	snek[1][1], snek[1][2] = next_x % GRID_COLUMNS, next_y % GRID_ROWS
 end
 
 local theta = 0
