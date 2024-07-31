@@ -81,29 +81,30 @@ function love.load()
 end
 
 local last_move = { 1, 0 }
+local last_input = { 1, 0 }
 local move = { 1, 0 }
-local input_timer = 0
+local snek_timer = 0
 
 function love.update(dt)
 	input:update()
 
 	local x, y = input:get("move")
-	if x ~= 0 and y ~= 0 or x == -last_move[1] or y == -last_move[2] then
+	if (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_move[1] and y == -last_move[2]) then
 		-- do nothing - prevent diagonal movement or 180 deg turn
-		move = last_move
 	else
-		move = { x, y }
+		last_input = { x, y }
 	end
+	move = last_input
 
-	if not collision and input_timer > 10 then
+	if not collision and snek_timer >= 0.3 then
 		advance_snek(unpack(move))
 		last_move = move
-		input_timer = 0
+		snek_timer = snek_timer - 0.3
 	end
-	input_timer = input_timer + 1
 
 	theta = theta + 0.5 * math.pi * dt
 	time = time + dt
+	snek_timer = snek_timer + dt
 
 	-- update time-based shaders
 	assets.water_shader:send("time", time)
@@ -126,9 +127,9 @@ local function draw_grid()
 end
 
 ---draw block at matrix index defined by x, y
----@param x number
----@param y number
----@param theta? number
+---@param x number horizontal index
+---@param y number vertical index
+---@param theta? number rotation in radians
 local function draw_block(x, y, theta)
 	lg.push()
 	lg.setColor(1, 1, 1)
