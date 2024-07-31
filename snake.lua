@@ -8,16 +8,16 @@ local tween_group = flux.group()
 ---generate grid table with primitives
 ---@param columns number
 ---@param rows number
----@param width number
+---@param max_width number
 ---@param line_width_pct number
 ---@return table
-local function generate_grid(columns, rows, width, line_width_pct)
-	local unit = math.floor(width / columns)
+local function generate_grid(columns, rows, max_width, line_width_pct)
+	local unit = math.floor(max_width / columns)
 	local line_width = math.floor(unit * line_width_pct)
 	return {
 		columns = columns,
 		rows = rows,
-		width = width,
+		width = unit * columns,
 		unit = unit,
 		line_width = line_width,
 		height = rows * unit + line_width,
