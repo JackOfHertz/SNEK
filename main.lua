@@ -29,13 +29,10 @@ function love.load()
 	})
 end
 
-local theta = 0
-
 function love.update(dt)
 	input:update()
 	flux.update(dt)
 
-	theta = theta + 0.5 * math.pi * dt
 	STATE.time = STATE.time + dt
 
 	assets.water_shader:send("time", STATE.time)
@@ -49,6 +46,8 @@ function love.draw()
 	push:setCanvas("base_canvas")
 	lg.setColor(0.05, 0.05, 0.05)
 	lg.rectangle("fill", 0, 0, GAME_WIDTH, GAME_HEIGHT)
+
+	local theta = STATE.time * 0.5 * math.pi
 
 	push:setCanvas("game_canvas")
 	snake.draw(theta, assets)

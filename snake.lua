@@ -84,7 +84,7 @@ function snake.update(dt)
 		next_move = { x, y }
 	end
 
-	if not collision and timer >= delta_time then
+	if timer >= delta_time then
 		advance_snake(snake_grid, next_move[1], next_move[2])
 		last_move = next_move
 		timer = timer - delta_time
