@@ -14,6 +14,7 @@ SCREENS = {
 STATE = {
 	menus = { 1 }, -- main menu
 	paused = false,
+	time = 0,
 }
 
 WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions()

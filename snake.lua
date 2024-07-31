@@ -128,6 +128,7 @@ function snake.draw(theta, assets)
 		lg.setShader(assets.rainbow_shader)
 	end
 	for i = 1, #snek do
+		assets.rainbow_shader:send("time", STATE.time - i * 0.1)
 		draw_cell(snake_grid, snek[i].x, snek[i].y, collision and 0 or (theta - i / 5))
 	end
 	lg.setShader()

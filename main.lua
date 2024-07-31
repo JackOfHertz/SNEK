@@ -30,18 +30,15 @@ function love.load()
 end
 
 local theta = 0
-local time = 0
 
 function love.update(dt)
 	input:update()
 	flux.update(dt)
 
 	theta = theta + 0.5 * math.pi * dt
-	time = time + dt
+	STATE.time = STATE.time + dt
 
-	-- update time-based shaders
-	assets.water_shader:send("time", time)
-	assets.rainbow_shader:send("time", time)
+	assets.water_shader:send("time", STATE.time)
 
 	snake.update(dt)
 	ui.update()
