@@ -79,7 +79,7 @@ function ui.update(input)
 			shift = -1
 		end
 		MAIN_MENU.active_index = ((MAIN_MENU.active_index + shift) % #MAIN_MENU.options)
-		love.event.push(MAIN_MENU.options[MAIN_MENU.active_index].event)
+		-- love.event.push(MAIN_MENU.options[MAIN_MENU.active_index].event)
 	end
 end
 
