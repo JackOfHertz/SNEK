@@ -1,40 +1,9 @@
----global
---TODO: need to move
-push = require("lib.push")
-
-local baton = require("lib.baton")
-
 require("constants")
+require("globals")
 local ui = require("ui")
 
 local lg = love.graphics
 local assets = {}
-
-local window_width, window_height = love.window.getDesktopDimensions()
-
-push:setupScreen(GAME_WIDTH, GAME_HEIGHT, window_width, window_height, {
-	canvas = true,
-	fullscreen = false,
-	highdpi = true,
-	pixelperfect = true,
-	resizable = true,
-})
-
-local input = baton.new({
-	controls = {
-		left = { "key:left", "key:a", "axis:leftx-", "button:dpleft" },
-		right = { "key:right", "key:d", "axis:leftx+", "button:dpright" },
-		up = { "key:up", "key:w", "axis:lefty-", "button:dpup" },
-		down = { "key:down", "key:s", "axis:lefty+", "button:dpdown" },
-		action = { "key:x", "button:a" },
-		back = { "key:escape", "button:back" },
-		confirm = { "key:return", "key:space", "key:x", "button:a" },
-	},
-	pairs = {
-		move = { "left", "right", "up", "down" },
-	},
-	joystick = love.joystick.getJoysticks()[1],
-})
 
 local snek = { { 5, 1 }, { 4, 1 }, { 3, 1 }, { 2, 1 }, { 1, 1 } }
 local collision = false

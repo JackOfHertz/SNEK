@@ -1,4 +1,5 @@
 require("constants")
+require("globals")
 
 local next = next
 local lg = love.graphics
@@ -124,7 +125,7 @@ end
 -- TODO: submit bug to baton
 local confirm_buffer = 0
 
-local function handle_menu(menu, input)
+local function update_menu(menu)
 	if STATE.menus[#STATE.menus] ~= menu.menu_index then
 		return
 	end
@@ -152,7 +153,7 @@ function ui.update(input)
 		return
 	end
 	for _, menu in ipairs(menus) do
-		handle_menu(menu, input)
+		update_menu(menu)
 	end
 	confirm_buffer = confirm_buffer + 1
 end
