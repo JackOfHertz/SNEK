@@ -25,7 +25,7 @@ local input = baton.new({
 		down = { "key:down", "key:s", "axis:lefty+", "button:dpdown" },
 		action = { "key:x", "button:a" },
 		back = { "key:escape", "button:back" },
-		confirm = { "key:enter", "key:space", "key:x", "button:a" },
+		confirm = { "key:return", "key:space", "key:x", "button:a" },
 	},
 	pairs = {
 		move = { "left", "right", "up", "down" },
