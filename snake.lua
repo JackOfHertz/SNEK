@@ -72,6 +72,10 @@ function snake.update(dt)
 	if STATE.paused then
 		return
 	end
+	if collision then
+		tween_group = nil
+		return
+	end
 	tween_group:update(dt)
 	local x, y = input:get("move")
 	if (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_move[1] and y == -last_move[2]) then
