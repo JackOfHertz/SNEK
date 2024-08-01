@@ -27,7 +27,7 @@ local function generate_grid(columns, rows, max_width, line_width_pct)
 		},
 	}
 end
-local snake_grid = generate_grid(30, 16, GAME_WIDTH, 0.125)
+local snake_grid = generate_grid(30, 16, GAME.width, 0.125)
 
 local snek = {
 	{ x = 5, y = 1 },
@@ -69,7 +69,7 @@ local next_move = { 1, 0 }
 local timer = 0
 
 function snake.update(dt)
-	if STATE.paused then
+	if GAME.state == STATE.PAUSE then
 		return
 	end
 	if collision then
@@ -133,7 +133,7 @@ function snake.draw(theta, assets)
 		lg.setShader(assets.rainbow_shader)
 	end
 	for i = 1, #snek do
-		assets.rainbow_shader:send("time", STATE.time - i * 0.1)
+		assets.rainbow_shader:send("time", GAME.time - i * 0.1)
 		draw_cell(snake_grid, snek[i].x, snek[i].y, collision and 0 or (theta - i / 5))
 	end
 	lg.setShader()

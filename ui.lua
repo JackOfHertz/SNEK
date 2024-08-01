@@ -6,8 +6,8 @@ local lg = love.graphics
 local ui = {}
 
 --- menu dimensions
-local menu_width, menu_height = GAME_WIDTH * 0.6, GAME_HEIGHT * 0.6
-local menu_offset = { (GAME_WIDTH - menu_width) * 0.5, (GAME_HEIGHT - menu_height) * 0.5 }
+local menu_width, menu_height = GAME.width * 0.6, GAME.height * 0.6
+local menu_offset = { (GAME.width - menu_width) * 0.5, (GAME.height - menu_height) * 0.5 }
 local menu_center = { menu_width * 0.5, menu_height * 0.5 }
 
 ---@enum menu_colors
@@ -18,41 +18,55 @@ local menu_colors = {
 }
 
 local function close_menu()
-	if next(STATE.menus) then
-		table.remove(STATE.menus)
+	if next(GAME.menus) then
+		table.remove(GAME.menus)
 	end
 end
 
 local function new_game()
+	GAME.state = STATE.PLAY
 	close_menu()
 end
 
 local function settings()
-	table.insert(STATE.menus, SETTINGS_MENU.menu_index)
+	table.insert(GAME.menus, SETTINGS_MENU.menu_index)
 end
 
 local function main_menu()
-	STATE.paused = false
+	GAME.state = STATE.MENU
 	close_menu()
-	table.insert(STATE.menus, MAIN_MENU.menu_index)
+	table.insert(GAME.menus, MAIN_MENU.menu_index)
 end
 
 local function pause_menu()
-	table.insert(STATE.menus, PAUSE_MENU.menu_index)
+	GAME.state = STATE.PAUSE
+	table.insert(GAME.menus, PAUSE_MENU.menu_index)
 end
 
 local function exit()
+	GAME.state = STATE.EXIT
 	love.event.quit(0)
 end
 
 local function toggle_fullscreen()
-	push:switchFullscreen(512, 288)
+	push:switchFullscreen(WINDOW_WIDTH, WINDOW_HEIGHT)
 end
 
 local function menu_back()
 	close_menu()
 end
 
+---@class MenuOption
+---@field name string
+---@field event function
+
+---@class MENU
+---@field title string
+---@field menu_index number
+---@field options MenuOption[]
+---@field active_index number
+
+---@type MENU
 MAIN_MENU = {
 	title = "SNEK",
 	menu_index = 1,
@@ -64,6 +78,7 @@ MAIN_MENU = {
 	active_index = 1,
 }
 
+---@type MENU
 SETTINGS_MENU = {
 	title = "SETTINGS",
 	menu_index = 2,
@@ -74,6 +89,7 @@ SETTINGS_MENU = {
 	active_index = 1,
 }
 
+---@type MENU
 PAUSE_MENU = {
 	title = "PAUSED",
 	menu_index = 3,
@@ -86,6 +102,7 @@ PAUSE_MENU = {
 	active_index = 1,
 }
 
+---@type MENU[]
 local menus = { MAIN_MENU, SETTINGS_MENU, PAUSE_MENU }
 
 ---confirm_buffer accounts for baton reading double inputs
@@ -93,11 +110,8 @@ local menus = { MAIN_MENU, SETTINGS_MENU, PAUSE_MENU }
 local confirm_buffer = 0
 
 local function update_menu(menu)
-	if STATE.menus[#STATE.menus] ~= menu.menu_index then
+	if GAME.menus[#GAME.menus] ~= menu.menu_index then
 		return
-	end
-	if menu.open then
-		menu.open()
 	end
 	local down, up = input:pressed("down"), input:pressed("up")
 	local confirm = input:released("confirm")
@@ -115,7 +129,7 @@ end
 ---@param theta number
 ---@param assets table
 local function draw_menu(menu, theta, assets)
-	if STATE.menus[#STATE.menus] ~= menu.menu_index then
+	if GAME.menus[#GAME.menus] ~= menu.menu_index then
 		return
 	end
 	lg.push()
@@ -177,15 +191,18 @@ end
 
 function ui.update()
 	local back = input:pressed("back")
-	if not STATE.menus[1] then
-		STATE.paused = back
-		if STATE.paused then
+	if back then
+		if GAME.state == STATE.PLAY then
 			pause_menu()
+		elseif GAME.state == STATE.PAUSE then
+			if #GAME.menus == 1 then
+				GAME.state = STATE.PLAY
+			end
+			close_menu()
+		elseif GAME.state == STATE.MENU and #GAME.menus ~= 1 then
+			close_menu()
 		end
 		return
-	end
-	if back and not (STATE.menus[#STATE.menus] == MAIN_MENU.menu_index) then
-		close_menu()
 	end
 	for _, menu in ipairs(menus) do
 		update_menu(menu)

@@ -2,24 +2,39 @@ push = require("lib.push")
 local baton = require("lib.baton")
 flux = require("lib.flux")
 
----game screen dimensions
-GAME_WIDTH, GAME_HEIGHT = 320, 180
-
 ---@enum SCREENS
 SCREENS = {
 	SNAKE = 1,
 }
 
----state table
+---Game state enumerator
+---@enum STATE
 STATE = {
-	menus = { 1 }, -- main menu
-	paused = false,
-	time = 0,
+	MENU = 1,
+	PLAY = 2,
+	PAUSE = 3,
+	EXIT = 4,
 }
 
+---Game state
+---@class GameState
+---@field width integer Game screen width in logical pixels
+---@field height integer Game screen height in logical pixels
+---@field menus number[] menu_index array
+---@field time number Seconds since game start
+---@field state STATE
+GAME = {
+	width = 320,
+	height = 180,
+	menus = { 1 },
+	time = 0,
+	state = STATE.MENU,
+}
+
+---@type integer, integer
 WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions()
 
-push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
+push:setupScreen(GAME.width, GAME.height, WINDOW_WIDTH, WINDOW_HEIGHT, {
 	canvas = true,
 	fullscreen = false,
 	highdpi = true,
