@@ -128,6 +128,7 @@ end
 function snake.draw(theta, assets)
 	theta = theta or 0
 	lg.push()
+	lg.translate((GAME.width - snake_grid.width) * 0.5, (GAME.height - snake_grid.height) * 0.5)
 	draw_grid(snake_grid)
 	if not collision then
 		lg.setShader(assets.rainbow_shader)
