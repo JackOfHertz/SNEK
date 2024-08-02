@@ -21,7 +21,7 @@ STATE = {
 ---@field width integer Game screen width in logical pixels
 ---@field height integer Game screen height in logical pixels
 ---@field menus number[] menu_index array
----@field time number Seconds since game start
+---@field time number Counter - seconds since game start
 ---@field state STATE
 GAME = {
 	width = 320,

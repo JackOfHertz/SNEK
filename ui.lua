@@ -115,17 +115,16 @@ local function update_menu(menu)
 	end
 	local down, up = input:pressed("down"), input:pressed("up")
 	local confirm = input:released("confirm")
-	menu.active_index = ((menu.active_index + (down and 1 or up and -1 or 0)) % #menu.options)
-	if menu.active_index == 0 then
-		menu.active_index = #menu.options
-	end
+	menu.active_index = ((menu.active_index + (down and 0 or up and -2 or -1)) % #menu.options) + 1
 	if confirm and confirm_buffer >= 5 then
 		menu.options[menu.active_index].event()
 		confirm_buffer = 0
 	end
+	confirm_buffer = confirm_buffer + 1
 end
 
 ---draw menu
+---@param menu table
 ---@param theta number
 ---@param assets table
 local function draw_menu(menu, theta, assets)
@@ -190,7 +189,7 @@ local function draw_menu(menu, theta, assets)
 end
 
 function ui.update()
-	local back = input:pressed("back")
+	local back = input:released("back")
 	if back then
 		if GAME.state == STATE.PLAY then
 			pause_menu()
@@ -207,7 +206,6 @@ function ui.update()
 	for _, menu in ipairs(menus) do
 		update_menu(menu)
 	end
-	confirm_buffer = confirm_buffer + 1
 end
 
 function ui.draw(theta, assets)

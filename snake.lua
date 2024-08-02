@@ -5,12 +5,25 @@ local lg = love.graphics
 local snake = {}
 local tween_group = flux.group()
 
+---@class Cell
+---@field unit integer
+---@field offset number
+
+---@class Grid
+---@field columns integer
+---@field rows integer
+---@field width integer
+---@field height integer
+---@field unit integer
+---@field line_width integer
+---@field cell Cell
+
 ---generate grid table with primitives
----@param columns number
----@param rows number
----@param max_width number
+---@param columns integer
+---@param rows integer
+---@param max_width integer
 ---@param line_width_pct number
----@return table
+---@return Grid
 local function generate_grid(columns, rows, max_width, line_width_pct)
 	local unit = math.floor(max_width / columns)
 	local line_width = math.floor(unit * line_width_pct)
@@ -18,9 +31,9 @@ local function generate_grid(columns, rows, max_width, line_width_pct)
 		columns = columns,
 		rows = rows,
 		width = unit * columns,
+		height = rows * unit + line_width,
 		unit = unit,
 		line_width = line_width,
-		height = rows * unit + line_width,
 		cell = {
 			unit = unit - line_width,
 			offset = line_width - (unit * 0.5),
@@ -29,6 +42,11 @@ local function generate_grid(columns, rows, max_width, line_width_pct)
 end
 local snake_grid = generate_grid(30, 16, GAME.width, 0.125)
 
+---@class GridCoordinate
+---@field x integer
+---@field y integer
+
+---@type GridCoordinate[]
 local snek = {
 	{ x = 5, y = 1 },
 	{ x = 4, y = 1 },
@@ -37,17 +55,21 @@ local snek = {
 	{ x = 1, y = 1 },
 }
 local collision = false
-local delta_time = 0.3
+local delta_time = 0.4
+
+---@class SnakeMove
+---@field x number
+---@field y number
 
 ---advance snake state
----@param grid table
----@param move_x number
----@param move_y number
-local function advance_snake(grid, move_x, move_y)
-	local next_x, next_y = snek[1].x + move_x, snek[1].y + move_y
+---@param grid Grid
+---@param move SnakeMove
+local function advance_snake(grid, move)
+	local next_x, next_y = snek[1].x + move.x, snek[1].y + move.y
 	for i = #snek, 2, -1 do
 		local prev = snek[i - 1]
 		-- update body segment locations, back to front
+		-- snek[i].x, snek[i].y = prev.x, prev.y
 		tween_group
 			:to(snek[i], delta_time * 0.3, { x = prev.x, y = prev.y })
 			:delay(((i - 1) / (#snek * 2)) * delta_time)
@@ -64,8 +86,11 @@ local function advance_snake(grid, move_x, move_y)
 	})
 end
 
-local last_move = { 1, 0 }
-local next_move = { 1, 0 }
+---@type SnakeMove
+local last_input = { x = 1, y = 0 }
+---@type SnakeMove
+local next_move = { x = 1, y = 0 }
+
 local timer = 0
 
 function snake.update(dt)
@@ -78,25 +103,31 @@ function snake.update(dt)
 	end
 	tween_group:update(dt)
 	local x, y = input:get("move")
-	if (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_move[1] and y == -last_move[2]) then
+	if not x or not y then
+		print("broken")
+	elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_input.x and y == -last_input.y) then
 		-- do nothing - prevent diagonal movement or 180 deg turn
+		local scalar = math.abs(next_move.x) + math.abs(next_move.y)
+		next_move = { x = next_move.x / scalar, y = next_move.y / scalar }
+	elseif x == last_input.x and y == last_input.y then
+		next_move = { x = x * 2, y = y * 2 }
 	else
-		next_move = { x, y }
+		next_move = { x = x, y = y }
 	end
 
 	if timer >= delta_time then
-		advance_snake(snake_grid, next_move[1], next_move[2])
-		last_move = next_move
+		advance_snake(snake_grid, next_move)
+		local scalar = math.abs(next_move.x) + math.abs(next_move.y)
+		last_input = { x = next_move.x / scalar, y = next_move.y / scalar }
 		timer = timer - delta_time
 	end
 	timer = timer + dt
 end
 
 ---draw grid specified by grid table
----@param grid table
+---@param grid Grid
 local function draw_grid(grid)
 	lg.push()
-	lg.clear(0, 0, 0, 0)
 	lg.setBlendMode("alpha")
 	lg.setColor(0.2, 0.2, 0.4, 0.5)
 	for i = 0, grid.columns do
@@ -109,7 +140,7 @@ local function draw_grid(grid)
 end
 
 ---draw cell at grid index defined by x, y
----@param grid table
+---@param grid Grid
 ---@param x number horizontal index
 ---@param y number vertical index
 ---@param theta? number rotation in radians
