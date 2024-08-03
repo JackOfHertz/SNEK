@@ -1,4 +1,5 @@
 require("globals")
+require("util")
 
 local lg = love.graphics
 
@@ -65,24 +66,22 @@ local delta_time = 0.4
 ---@param grid Grid
 ---@param move SnakeMove
 local function advance_snake(grid, move)
-	local next_x, next_y = snek[1].x + move.x, snek[1].y + move.y
+	local next = { x = snek[1].x + move.x, y = snek[1].y + move.y }
 	for i = #snek, 2, -1 do
 		local prev = snek[i - 1]
 		-- update body segment locations, back to front
-		-- snek[i].x, snek[i].y = prev.x, prev.y
-		tween_group
-			:to(snek[i], delta_time * 0.3, { x = prev.x, y = prev.y })
-			:delay(((i - 1) / (#snek * 2)) * delta_time)
+		--snek[i].x, snek[i].y = prev.x, prev.y
+		tween_group:to(snek[i], delta_time * 0.3, prev):delay(((i - 1) / (#snek * 2)) * delta_time)
 		-- detect collision with self
-		if next_x == prev.x and next_y == prev.y then
+		if next.x == prev.x and next.y == prev.y then
 			collision = true
 			return
 		end
 	end
 	-- update head location
 	tween_group:to(snek[1], delta_time * 0.3, {
-		x = (next_x - 1) % grid.columns + 1,
-		y = (next_y - 1) % grid.rows + 1,
+		x = index_modulo(next.x, grid.columns),
+		y = index_modulo(next.y, grid.rows),
 	})
 end
 

@@ -1,4 +1,5 @@
 require("globals")
+require("util")
 
 local next = next
 local lg = love.graphics
@@ -115,7 +116,7 @@ local function update_menu(menu)
 	end
 	local down, up = input:pressed("down"), input:pressed("up")
 	local confirm = input:released("confirm")
-	menu.active_index = ((menu.active_index + (down and 0 or up and -2 or -1)) % #menu.options) + 1
+	menu.active_index = index_modulo(menu.active_index + (down and 1 or up and -1 or 0), #menu.options)
 	if confirm and confirm_buffer >= 5 then
 		menu.options[menu.active_index].event()
 		confirm_buffer = 0
