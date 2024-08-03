@@ -49,6 +49,11 @@ local snake_grid = generate_grid(30, 16, GAME.width, 0.125)
 
 ---@type GridCoordinate[]
 local snek = {
+	{ x = 10, y = 1 },
+	{ x = 9, y = 1 },
+	{ x = 8, y = 1 },
+	{ x = 7, y = 1 },
+	{ x = 6, y = 1 },
 	{ x = 5, y = 1 },
 	{ x = 4, y = 1 },
 	{ x = 3, y = 1 },
@@ -56,7 +61,7 @@ local snek = {
 	{ x = 1, y = 1 },
 }
 local collision = false
-local delta_time = 0.4
+local delta_time = 0.425
 
 ---@class SnakeMove
 ---@field x number
@@ -146,7 +151,7 @@ local function draw_cell(grid, x, y, theta)
 	lg.push()
 	lg.setColor(1, 1, 1)
 	lg.translate(grid.unit * (x - 0.5), grid.unit * (y - 0.5))
-	lg.rotate(0.2 * math.sin(2 * theta))
+	-- lg.rotate(0.2 * math.sin(2 * theta))
 	lg.rectangle("fill", grid.cell.offset, grid.cell.offset, grid.cell.unit, grid.cell.unit)
 	lg.pop()
 end
