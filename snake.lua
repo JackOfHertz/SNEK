@@ -88,7 +88,7 @@ end
 ---@type SnakeMove
 local last_input = { x = 1, y = 0 }
 ---@type SnakeMove
-local next_move = { x = 1, y = 0 }
+local next_move = last_input
 
 local timer = 0
 
@@ -106,18 +106,17 @@ function snake.update(dt)
 		print("broken")
 	elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_input.x and y == -last_input.y) then
 		-- do nothing - prevent diagonal movement or 180 deg turn
-		local scalar = math.abs(next_move.x) + math.abs(next_move.y)
-		next_move = { x = next_move.x / scalar, y = next_move.y / scalar }
+		next_move = last_input
 	elseif x == last_input.x and y == last_input.y then
+		last_input = { x = x, y = y }
 		next_move = { x = x * 2, y = y * 2 }
 	else
-		next_move = { x = x, y = y }
+		last_input = { x = x, y = y }
+		next_move = last_input
 	end
 
 	if timer >= delta_time then
 		advance_snake(snake_grid, next_move)
-		local scalar = math.abs(next_move.x) + math.abs(next_move.y)
-		last_input = { x = next_move.x / scalar, y = next_move.y / scalar }
 		timer = timer - delta_time
 	end
 	timer = timer + dt
