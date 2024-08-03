@@ -59,79 +59,75 @@ end
 
 ---@class MenuOption
 ---@field name string
----@field event function
+---@field callback function
 
----@class MENU
+---@class Menu
 ---@field title string
 ---@field menu_index number
 ---@field options MenuOption[]
 ---@field active_index number
 
----@type MENU
+---@type Menu
 MAIN_MENU = {
 	title = "SNEK",
 	menu_index = 1,
 	options = {
-		{ name = "NEW GAME", event = new_game },
-		{ name = "SETTINGS", event = settings },
-		{ name = "EXIT", event = exit },
+		{ name = "NEW GAME", callback = new_game },
+		{ name = "SETTINGS", callback = settings },
+		{ name = "EXIT", callback = exit },
 	},
 	active_index = 1,
 }
 
----@type MENU
+---@type Menu
 SETTINGS_MENU = {
 	title = "SETTINGS",
 	menu_index = 2,
 	options = {
-		{ name = "TOGGLE FULLSCREEN", event = toggle_fullscreen },
-		{ name = "BACK", event = menu_back },
+		{ name = "TOGGLE FULLSCREEN", callback = toggle_fullscreen },
+		{ name = "BACK", callback = menu_back },
 	},
 	active_index = 1,
 }
 
----@type MENU
+---@type Menu
 PAUSE_MENU = {
 	title = "PAUSED",
 	menu_index = 3,
 	options = {
-		{ name = "CONTINUE", event = close_menu },
-		{ name = "RESTART", event = new_game },
-		{ name = "SETTINGS", event = settings },
-		{ name = "QUIT", event = main_menu },
+		{ name = "CONTINUE", callback = close_menu },
+		{ name = "RESTART", callback = new_game },
+		{ name = "SETTINGS", callback = settings },
+		{ name = "QUIT", callback = main_menu },
 	},
 	active_index = 1,
 }
 
----@type MENU[]
+---@type Menu[]
 local menus = { MAIN_MENU, SETTINGS_MENU, PAUSE_MENU }
 
 ---confirm_buffer accounts for baton reading double inputs
--- TODO: submit bug to baton
+-- TODO: investigate further, maybe submit bug to baton
 local confirm_buffer = 0
 
+---update menu
+---@param menu Menu
 local function update_menu(menu)
-	if GAME.menus[#GAME.menus] ~= menu.menu_index then
-		return
-	end
 	local down, up = input:pressed("down"), input:pressed("up")
 	local confirm = input:released("confirm")
 	menu.active_index = index_modulo(menu.active_index + (down and 1 or up and -1 or 0), #menu.options)
 	if confirm and confirm_buffer >= 5 then
-		menu.options[menu.active_index].event()
+		menu.options[menu.active_index].callback()
 		confirm_buffer = 0
 	end
 	confirm_buffer = confirm_buffer + 1
 end
 
 ---draw menu
----@param menu table
+---@param menu Menu
 ---@param theta number
 ---@param assets table
 local function draw_menu(menu, theta, assets)
-	if GAME.menus[#GAME.menus] ~= menu.menu_index then
-		return
-	end
 	lg.push()
 
 	-- background
@@ -204,14 +200,14 @@ function ui.update()
 		end
 		return
 	end
-	for _, menu in ipairs(menus) do
-		update_menu(menu)
+	if #GAME.menus ~= 0 then
+		update_menu(menus[GAME.menus[#GAME.menus]])
 	end
 end
 
 function ui.draw(theta, assets)
-	for _, menu in ipairs(menus) do
-		draw_menu(menu, theta, assets)
+	if #GAME.menus ~= 0 then
+		draw_menu(menus[GAME.menus[#GAME.menus]], theta, assets)
 	end
 end
 
