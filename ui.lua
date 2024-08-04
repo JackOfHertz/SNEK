@@ -1,3 +1,5 @@
+local lume = require("lib.lume")
+
 require("globals")
 require("util")
 
@@ -5,18 +7,6 @@ local next = next
 local lg = love.graphics
 
 local ui = {}
-
---- menu dimensions
-local menu_width, menu_height = GAME.width * 0.6, GAME.height * 0.6
-local menu_offset = { (GAME.width - menu_width) * 0.5, (GAME.height - menu_height) * 0.5 }
-local menu_center = { menu_width * 0.5, menu_height * 0.5 }
-
----@enum menu_colors
-local menu_colors = {
-	background = { 0, 0, 0, 0.3 },
-	active = { 1, 1, 1, 1 },
-	inactive = { 1, 1, 1, 0.7 },
-}
 
 local function close_menu()
 	if next(GAME.menus) then
@@ -29,19 +19,19 @@ local function new_game()
 	close_menu()
 end
 
-local function settings()
-	table.insert(GAME.menus, SETTINGS_MENU.menu_index)
-end
-
 local function main_menu()
 	GAME.state = STATE.MENU
 	close_menu()
-	table.insert(GAME.menus, MAIN_MENU.menu_index)
+	table.insert(GAME.menus, 1)
+end
+
+local function settings()
+	table.insert(GAME.menus, 2)
 end
 
 local function pause_menu()
 	GAME.state = STATE.PAUSE
-	table.insert(GAME.menus, PAUSE_MENU.menu_index)
+	table.insert(GAME.menus, 3)
 end
 
 local function exit()
@@ -57,54 +47,77 @@ local function menu_back()
 	close_menu()
 end
 
+local function continue()
+	GAME.state = STATE.PLAY
+	close_menu()
+end
+
+---@class MenuTemplate
+---@field width number
+---@field height number
+---@field offset Coordinates
+---@field colors table
+
+---generate menu template
+---@param width number
+---@param height number
+---@return MenuTemplate
+local function menu_template(width, height)
+	return {
+		width = width,
+		height = height,
+		offset = { x = (GAME.width - width) * 0.5, y = (GAME.height - height) * 0.5 },
+		colors = {
+			background = { 0, 0, 0, 0.3 },
+			active = { 1, 1, 1, 1 },
+			inactive = { 1, 1, 1, 0.7 },
+		},
+	}
+end
+
+---@type MenuTemplate
+local menu_tmpl = menu_template(GAME.width * 0.6, GAME.height * 0.6)
+
 ---@class MenuOption
 ---@field name string
 ---@field callback function
 
----@class Menu
+---@class Menu: MenuTemplate
 ---@field title string
 ---@field menu_index number
 ---@field options MenuOption[]
 ---@field active_index number
 
----@type Menu
-MAIN_MENU = {
-	title = "SNEK",
-	menu_index = 1,
-	options = {
-		{ name = "NEW GAME", callback = new_game },
-		{ name = "SETTINGS", callback = settings },
-		{ name = "EXIT", callback = exit },
-	},
-	active_index = 1,
-}
-
----@type Menu
-SETTINGS_MENU = {
-	title = "SETTINGS",
-	menu_index = 2,
-	options = {
-		{ name = "TOGGLE FULLSCREEN", callback = toggle_fullscreen },
-		{ name = "BACK", callback = menu_back },
-	},
-	active_index = 1,
-}
-
----@type Menu
-PAUSE_MENU = {
-	title = "PAUSED",
-	menu_index = 3,
-	options = {
-		{ name = "CONTINUE", callback = close_menu },
-		{ name = "RESTART", callback = new_game },
-		{ name = "SETTINGS", callback = settings },
-		{ name = "QUIT", callback = main_menu },
-	},
-	active_index = 1,
-}
-
 ---@type Menu[]
-local menus = { MAIN_MENU, SETTINGS_MENU, PAUSE_MENU }
+local menus = {
+	lume.merge(menu_tmpl, {
+		title = "SNEK",
+		options = {
+			{ name = "NEW GAME", callback = new_game },
+			{ name = "SETTINGS", callback = settings },
+			{ name = "EXIT", callback = exit },
+		},
+		active_index = 1,
+	}),
+	lume.merge(menu_tmpl, {
+		title = "SETTINGS",
+		options = {
+			{ name = "TOGGLE FULLSCREEN", callback = toggle_fullscreen },
+			{ name = "BACK", callback = menu_back },
+		},
+		active_index = 1,
+	}),
+	lume.merge(menu_tmpl, {
+		title = "PAUSED",
+		options = {
+			{ name = "CONTINUE", callback = continue },
+			{ name = "RESTART", callback = new_game },
+			{ name = "SETTINGS", callback = settings },
+			{ name = "QUIT", callback = main_menu },
+		},
+		active_index = 1,
+	}),
+}
 
 ---confirm_buffer accounts for baton reading double inputs
 -- TODO: investigate further, maybe submit bug to baton
@@ -131,26 +144,26 @@ local function draw_menu(menu, theta, assets)
 	lg.push()
 
 	-- background
-	lg.setColor(menu_colors.background)
-	lg.translate(unpack(menu_offset))
-	lg.rectangle("fill", 0, 0, menu_width, menu_height + 0.25 * #menu.options)
+	lg.setColor(menu.colors.background)
+	lg.translate(menu.offset.x, menu.offset.y)
+	lg.rectangle("fill", 0, 0, menu.width, menu.height + 0.25 * #menu.options)
 
 	-- text
 	lg.setShader(assets.water_shader)
 
 	-- title
 	lg.setFont(assets.title_font)
-	lg.setColor(menu_colors.active)
+	lg.setColor(menu.colors.active)
 	lg.printf(
 		menu.title,
-		menu_center[1],
-		menu_height * 0.2,
-		menu_width,
+		menu.width * 0.5,
+		menu.height * 0.2,
+		menu.width,
 		"center",
 		0.15 * math.sin(theta),
 		1,
 		1,
-		menu_center[1],
+		menu.width * 0.5,
 		16
 	)
 
@@ -161,21 +174,21 @@ local function draw_menu(menu, theta, assets)
 		local active = (i == menu.active_index)
 		if active then
 			lg.setShader(assets.water_shader)
-			lg.setColor(menu_colors.active)
+			lg.setColor(menu.colors.active)
 		else
 			lg.setShader()
-			lg.setColor(menu_colors.inactive)
+			lg.setColor(menu.colors.inactive)
 		end
 		lg.printf(
 			option.name,
-			menu_center[1],
-			menu_height * (0.3 + (0.6 * i / #menu.options)),
-			menu_width,
+			menu.width * 0.5,
+			menu.height * (0.3 + (0.6 * i / #menu.options)),
+			menu.width,
 			"center",
 			0,
 			1,
 			1,
-			menu_center[1],
+			menu.width * 0.5,
 			16
 		)
 	end
@@ -190,23 +203,21 @@ function ui.update()
 	if back then
 		if GAME.state == STATE.PLAY then
 			pause_menu()
+		elseif GAME.menus > 1 then
+			close_menu()
 		elseif GAME.state == STATE.PAUSE then
-			if #GAME.menus == 1 then
-				GAME.state = STATE.PLAY
-			end
-			close_menu()
-		elseif GAME.state == STATE.MENU and #GAME.menus ~= 1 then
-			close_menu()
+			continue()
+			return
 		end
 		return
 	end
-	if #GAME.menus ~= 0 then
+	if #GAME.menus > 0 then
 		update_menu(menus[GAME.menus[#GAME.menus]])
 	end
 end
 
 function ui.draw(theta, assets)
-	if #GAME.menus ~= 0 then
+	if #GAME.menus > 0 then
 		draw_menu(menus[GAME.menus[#GAME.menus]], theta, assets)
 	end
 end
