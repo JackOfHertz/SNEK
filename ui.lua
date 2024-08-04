@@ -203,7 +203,7 @@ function ui.update()
 	if back then
 		if GAME.state == STATE.PLAY then
 			pause_menu()
-		elseif GAME.menus > 1 then
+		elseif #GAME.menus > 1 then
 			close_menu()
 		elseif GAME.state == STATE.PAUSE then
 			continue()
