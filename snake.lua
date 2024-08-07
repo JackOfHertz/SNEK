@@ -171,6 +171,7 @@ local function respawn_snake()
 end
 
 local timer = 0
+local hold_timer = 0
 
 function snake.update(dt)
 	flux.update(dt)
@@ -194,8 +195,12 @@ function snake.update(dt)
 			-- do nothing - prevent diagonal movement or 180 deg turn
 			next_move = last_input
 		elseif x == last_input.x and y == last_input.y then
-			last_input = { x = x, y = y }
-			next_move = { x = x * 2, y = y * 2 }
+			if hold_timer >= snake.frame_interval * 0.5 then
+				next_move = { x = x * 2, y = y * 2 }
+			else
+				next_move = last_input
+				hold_timer = hold_timer + dt
+			end
 		else
 			last_input = { x = x, y = y }
 			next_move = last_input
@@ -204,6 +209,7 @@ function snake.update(dt)
 		if timer >= snake.frame_interval then
 			advance_snake(next_move)
 			timer = timer - snake.frame_interval
+			hold_timer = 0
 		end
 	end
 	timer = timer + dt
