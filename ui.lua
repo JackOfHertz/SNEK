@@ -138,9 +138,8 @@ end
 
 ---draw menu
 ---@param menu Menu
----@param theta number
 ---@param assets table
-local function draw_menu(menu, theta, assets)
+local function draw_menu(menu, assets)
 	lg.push()
 
 	-- background
@@ -154,13 +153,14 @@ local function draw_menu(menu, theta, assets)
 	-- title
 	lg.setFont(assets.title_font)
 	lg.setColor(menu.colors.active)
+
 	lg.printf(
 		menu.title,
 		menu.width * 0.5,
 		menu.height * 0.2,
 		menu.width,
 		"center",
-		0.15 * math.sin(theta),
+		0.15 * math.sin(GAME.time),
 		1,
 		1,
 		menu.width * 0.5,
@@ -216,9 +216,9 @@ function ui.update()
 	end
 end
 
-function ui.draw(theta, assets)
+function ui.draw(assets)
 	if #GAME.menus > 0 then
-		draw_menu(menus[GAME.menus[#GAME.menus]], theta, assets)
+		draw_menu(menus[GAME.menus[#GAME.menus]], assets)
 	end
 end
 

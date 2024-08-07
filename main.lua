@@ -39,8 +39,11 @@ function love.update(dt)
 
 	assets.water_shader:send("time", GAME.time)
 
-	snake.update(dt)
 	ui.update()
+	if GAME.state == STATE.PAUSE then
+		return
+	end
+	snake.update(dt)
 end
 
 function love.draw()
@@ -49,13 +52,11 @@ function love.draw()
 	lg.setColor(0.05, 0.05, 0.05)
 	lg.rectangle("fill", 0, 0, GAME.width, GAME.height)
 
-	local theta = GAME.time * 0.5 * math.pi
-
 	push:setCanvas("game_canvas")
-	snake.draw(theta, assets)
+	snake.draw(assets)
 
 	push:setCanvas("ui_canvas")
-	ui.draw(theta, assets)
+	ui.draw(assets)
 
 	push:finish()
 end
