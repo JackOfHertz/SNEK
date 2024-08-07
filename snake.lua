@@ -1,3 +1,7 @@
+local lume = require("lib.lume")
+local flux = require("lib.flux")
+local tick = require("lib.tick")
+
 require("globals")
 require("util")
 
@@ -8,6 +12,7 @@ local SNAKE_STATE = {
 	ALIVE = 1,
 	DEAD = 2,
 	COLLISION = 3,
+	RESPAWN = 4,
 }
 
 local snake = {}
@@ -15,6 +20,12 @@ snake.tweens = flux.group()
 
 ---@type SNAKE_STATE
 snake.state = SNAKE_STATE.ALIVE
+
+---@type boolean
+snake.visible = true
+
+---@type number
+snake.frame_interval = 0.425
 
 ---@class Coordinates
 ---@field x integer
@@ -66,10 +77,12 @@ local function generate_grid(columns, rows, max_width, max_height, line_width_pc
 		},
 	}
 end
+
+---@type Grid
 snake.grid = generate_grid(30, 16, GAME.width, GAME.height, 0.1)
 
 ---@type Coordinates[]
-local snek = {
+local snek_default = {
 	{ x = 10, y = 1 },
 	{ x = 9, y = 1 },
 	{ x = 8, y = 1 },
@@ -81,7 +94,16 @@ local snek = {
 	{ x = 2, y = 1 },
 	{ x = 1, y = 1 },
 }
-snake.frame_interval = 0.425
+
+local snek = {}
+
+local function move_snek_to_default()
+	for i = 1, #snek_default do
+		table.insert(snek, lume.merge(snek_default[i]))
+	end
+end
+
+move_snek_to_default()
 
 ---@class SnakeMove
 ---@field x number
@@ -113,47 +135,76 @@ end
 local function kill_snake()
 	snake.state = SNAKE_STATE.DEAD
 	snake.tweens = flux.group()
-	local dead_zone = snake.grid.rows + 1
-	for i = #snek, 1, -1 do
+	local dead_zone = snake.grid.rows + 10
+	for i = 1, #snek, 1 do
 		snake.tweens:to(snek[i], 1, { y = dead_zone }):ease("backin"):delay(0.3 + 0.1 * (#snek - i))
 	end
 end
-
-local function respawn_snake() end
 
 ---@type SnakeMove
 local last_input = { x = 1, y = 0 }
 ---@type SnakeMove
 local next_move = last_input
 
+local function toggle_visibility()
+	snake.visible = not snake.visible
+end
+
+local function respawn_snake()
+	snake.state = SNAKE_STATE.RESPAWN
+	snake.tweens = flux.group()
+	for i = 1, #snek do
+		snake.tweens:to(snek[i], 1, snek_default[i]):ease("quadout")
+	end
+	last_input = { x = 1, y = 0 }
+	next_move = last_input
+	tick.delay(1.3, toggle_visibility)
+		:after(0.3, toggle_visibility)
+		:after(0.3, toggle_visibility)
+		:after(0.3, toggle_visibility)
+		:after(0.3, toggle_visibility)
+		:after(0.3, function()
+			toggle_visibility()
+			snake.tweens = flux.group()
+			snake.state = SNAKE_STATE.ALIVE
+		end)
+end
+
 local timer = 0
 
 function snake.update(dt)
+	flux.update(dt)
+	tick.update(dt)
 	snake.tweens:update(dt)
+
 	if snake.state == SNAKE_STATE.COLLISION then
 		kill_snake()
+	elseif snake.state == SNAKE_STATE.RESPAWN then
 		return
 	elseif snake.state == SNAKE_STATE.DEAD then
-		return
-	end
+		if timer >= 3 then
+			respawn_snake()
+			timer = timer - 3
+		end
+	elseif snake.state == SNAKE_STATE.ALIVE then
+		local x, y = input:get("move")
+		if not x or not y then
+			print("broken")
+		elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_input.x and y == -last_input.y) then
+			-- do nothing - prevent diagonal movement or 180 deg turn
+			next_move = last_input
+		elseif x == last_input.x and y == last_input.y then
+			last_input = { x = x, y = y }
+			next_move = { x = x * 2, y = y * 2 }
+		else
+			last_input = { x = x, y = y }
+			next_move = last_input
+		end
 
-	local x, y = input:get("move")
-	if not x or not y then
-		print("broken")
-	elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_input.x and y == -last_input.y) then
-		-- do nothing - prevent diagonal movement or 180 deg turn
-		next_move = last_input
-	elseif x == last_input.x and y == last_input.y then
-		last_input = { x = x, y = y }
-		next_move = { x = x * 2, y = y * 2 }
-	else
-		last_input = { x = x, y = y }
-		next_move = last_input
-	end
-
-	if timer >= snake.frame_interval then
-		advance_snake(next_move)
-		timer = timer - snake.frame_interval
+		if timer >= snake.frame_interval then
+			advance_snake(next_move)
+			timer = timer - snake.frame_interval
+		end
 	end
 	timer = timer + dt
 end
@@ -195,9 +246,11 @@ function snake.draw(assets)
 	if snake.state == SNAKE_STATE.ALIVE then
 		lg.setShader(assets.rainbow_shader)
 	end
-	for i = 1, #snek do
-		assets.rainbow_shader:send("time", GAME.time - i * 0.1)
-		draw_cell(snake.grid, snek[i].x, snek[i].y)
+	if snake.visible then
+		for i = 1, #snek do
+			assets.rainbow_shader:send("time", GAME.time - i * 0.1)
+			draw_cell(snake.grid, snek[i].x, snek[i].y)
+		end
 	end
 	lg.setShader()
 	lg.pop()

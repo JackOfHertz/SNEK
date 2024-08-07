@@ -1,6 +1,5 @@
 push = require("lib.push")
 local baton = require("lib.baton")
-flux = require("lib.flux")
 
 ---@enum SCREENS
 SCREENS = {

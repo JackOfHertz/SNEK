@@ -33,7 +33,6 @@ end
 
 function love.update(dt)
 	input:update()
-	flux.update(dt)
 
 	GAME.time = GAME.time + dt
 
