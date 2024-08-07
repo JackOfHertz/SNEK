@@ -1,3 +1,5 @@
+require("lib.lovedebug")
+
 require("globals")
 local ui = require("ui")
 local snake = require("snake")
