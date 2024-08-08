@@ -18,6 +18,8 @@ local SNAKE_STATE = {
 local snake = {}
 snake.tweens = flux.group()
 
+snake.tweens:tick(tick)
+
 ---@type SNAKE_STATE
 snake.state = SNAKE_STATE.ALIVE
 
@@ -26,6 +28,8 @@ snake.visible = true
 
 ---@type number
 snake.frame_interval = 0.425
+---@type number
+snake.flash_interval = 0.425 * 0.5
 
 ---@class Coordinates
 ---@field x integer
@@ -121,8 +125,9 @@ local function advance_snake(move)
 		tween_group:to(snek[i], snake.frame_interval * 0.3, prev):delay(((i - 1) / (#snek * 2)) * snake.frame_interval)
 		-- detect collision with self
 		if next.x == prev.x and next.y == prev.y then
-			snake.state = SNAKE_STATE.COLLISION
-			return
+			tick.delay(snake.flash_interval, function()
+				snake.state = SNAKE_STATE.COLLISION
+			end)
 		end
 	end
 	-- update head location
@@ -154,16 +159,16 @@ local function respawn_snake()
 	snake.state = SNAKE_STATE.RESPAWN
 	snake.tweens = flux.group()
 	for i = 1, #snek do
-		snake.tweens:to(snek[i], 1, snek_default[i]):ease("quadout")
+		snake.tweens:to(snek[i], snake.frame_interval, snek_default[i]):ease("quadout")
 	end
 	last_input = { x = 1, y = 0 }
 	next_move = last_input
-	tick.delay(1.3, toggle_visibility)
-		:after(0.3, toggle_visibility)
-		:after(0.3, toggle_visibility)
-		:after(0.3, toggle_visibility)
-		:after(0.3, toggle_visibility)
-		:after(0.3, function()
+	tick.delay(3 * snake.flash_interval, toggle_visibility)
+		:after(snake.flash_interval, toggle_visibility)
+		:after(snake.flash_interval, toggle_visibility)
+		:after(snake.flash_interval, toggle_visibility)
+		:after(snake.flash_interval, toggle_visibility)
+		:after(snake.flash_interval, function()
 			toggle_visibility()
 			snake.tweens = flux.group()
 			snake.state = SNAKE_STATE.ALIVE
@@ -253,7 +258,7 @@ function snake.draw(assets)
 		lg.setShader(assets.rainbow_shader)
 	end
 	if snake.visible then
-		for i = 1, #snek do
+		for i = #snek, 1, -1 do
 			assets.rainbow_shader:send("time", GAME.time - i * 0.1)
 			draw_cell(snake.grid, snek[i].x, snek[i].y)
 		end
