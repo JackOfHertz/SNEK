@@ -196,18 +196,22 @@ local hold_timer = 0
 local function control_snake(dt)
 	local x, y = input:get("move")
 	if not x or not y then
-		print("broken")
+		print("invalid input")
 	elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_input.x and y == -last_input.y) then
 		-- do nothing - prevent diagonal movement or 180 deg turn
+		hold_timer = 0
 		next_move = last_input
 	elseif x == last_input.x and y == last_input.y then
-		if hold_timer >= snake.frame_interval * 0.5 then
+		-- same direction held
+		if hold_timer >= snake.frame_interval * 0.25 then
 			next_move = { x = x * 2, y = y * 2 }
 		else
 			next_move = last_input
-			hold_timer = hold_timer + dt
 		end
+		hold_timer = hold_timer + dt
 	else
+		-- new direction
+		hold_timer = 0
 		last_input = { x = x, y = y }
 		next_move = last_input
 	end
