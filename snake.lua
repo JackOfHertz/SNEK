@@ -156,7 +156,7 @@ local function kill_snake()
 	for i = 1, #snek, 1 do
 		snake.tweens:to(snek[i], 1, { y = dead_zone }):ease("backin"):delay(0.3 + 0.1 * (#snek - i))
 	end
-	snake.tweens:to(snake.grid, 2, { columns = 80, unit = GAME.width / 80 })
+	-- snake.tweens:to(snake.grid, 2, { columns = 80, unit = GAME.width / 80 })
 end
 
 ---@type SnakeMove
