@@ -97,6 +97,8 @@ end
 local last_input = { x = 1, y = 0 }
 ---@type SnakeMove
 local next_move = last_input
+---@type SnakeMove
+local last_move = last_input
 
 local function toggle_visibility()
 	snake.visible = not snake.visible
@@ -111,6 +113,7 @@ local function respawn_snake()
 	end
 	last_input = { x = 1, y = 0 }
 	next_move = last_input
+	last_move = last_input
 	tick.delay(3 * snake.flash_interval, toggle_visibility)
 		:after(snake.flash_interval, toggle_visibility)
 		:after(snake.flash_interval, toggle_visibility)
@@ -132,7 +135,7 @@ local function control_snake(dt)
 	local x, y = input:get("move")
 	if not x or not y then
 		print("invalid input")
-	elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_input.x and y == -last_input.y) then
+	elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_move.x and y == -last_move.y) then
 		-- do nothing - prevent diagonal movement or 180 deg turn
 		hold_timer = 0
 		next_move = last_input
@@ -153,6 +156,7 @@ local function control_snake(dt)
 
 	if timer >= snake.frame_interval then
 		advance_snake(next_move)
+		last_move = next_move
 		timer = timer - snake.frame_interval
 		hold_timer = 0
 	end
