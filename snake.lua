@@ -4,6 +4,7 @@ local tick = require("lib.tick")
 
 require("globals")
 require("util")
+local grid = require("util.grid")
 
 local lg = love.graphics
 
@@ -15,87 +16,21 @@ local SNAKE_STATE = {
 	RESPAWN = 4,
 }
 
-local snake = {}
-snake.tweens = flux.group()
-
-snake.tweens:tick(tick)
-
----@type SNAKE_STATE
-snake.state = SNAKE_STATE.ALIVE
-
----@type boolean
-snake.visible = true
-
----@type number
-snake.frame_interval = 0.425
----@type number
-snake.flash_interval = 0.425 * 0.5
-
----@class Coordinates
----@field x integer
----@field y integer
-
----@class Cell
----@field unit integer
----@field offset Coordinates
-
----@class Grid
----@field columns integer
----@field rows integer
----@field width integer
----@field height integer
----@field unit integer
----@field line_width integer
----@field offset Coordinates
----@field cell Cell
-
----@enum ALIGN
-local ALIGN = {
-	CENTER = 0.5,
-	LEFT = 0,
-	RIGHT = 1,
-	TOP = 0,
-	BOTTOM = 1,
+local snake = {
+	tweens = flux.group(),
+	---@type SNAKE_STATE
+	state = SNAKE_STATE.ALIVE,
+	---@type boolean
+	visible = true,
+	---@type number
+	frame_interval = 0.425,
+	---@type number
+	flash_interval = 0.425 * 0.5,
+	---@type Grid
+	grid = grid.generate(30, 16, GAME.width, GAME.height, 0.1, grid.ALIGN.CENTER, grid.ALIGN.BOTTOM),
 }
 
----generate grid table with primitives
----@param columns integer
----@param rows integer
----@param max_width integer in pixels
----@param max_height integer in pixels
----@param line_width_pct number percentage of grid as line
----@param horizontal_align? ALIGN
----@param vertical_align? ALIGN
----@return Grid
-local function generate_grid(columns, rows, max_width, max_height, line_width_pct, horizontal_align, vertical_align)
-	local unit = math.floor(max_width / columns)
-	local line_width = math.ceil(unit * line_width_pct)
-	local width = unit * columns + line_width
-	local height = rows * unit + line_width
-
-	return {
-		columns = columns,
-		rows = rows,
-		width = columns * unit + line_width,
-		height = rows * unit + line_width,
-		unit = unit,
-		line_width = line_width,
-		offset = {
-			x = (max_width - width) * (horizontal_align or ALIGN.CENTER),
-			y = (max_height - height) * (vertical_align or ALIGN.CENTER),
-		},
-		cell = {
-			unit = unit - line_width,
-			offset = {
-				x = line_width - unit * 0.5,
-				y = -unit * 0.5,
-			},
-		},
-	}
-end
-
----@type Grid
-snake.grid = generate_grid(30, 16, GAME.width, GAME.height, 0.1, ALIGN.CENTER, ALIGN.BOTTOM)
+snake.tweens:tick(tick)
 
 ---@type Coordinates[]
 local snek_default = {
@@ -156,7 +91,6 @@ local function kill_snake()
 	for i = 1, #snek, 1 do
 		snake.tweens:to(snek[i], 1, { y = dead_zone }):ease("backin"):delay(0.3 + 0.1 * (#snek - i))
 	end
-	-- snake.tweens:to(snake.grid, 2, { columns = 80, unit = GAME.width / 80 })
 end
 
 ---@type SnakeMove
@@ -168,6 +102,7 @@ local function toggle_visibility()
 	snake.visible = not snake.visible
 end
 
+---respawn snake
 local function respawn_snake()
 	snake.state = SNAKE_STATE.RESPAWN
 	snake.tweens = flux.group()
@@ -223,6 +158,8 @@ local function control_snake(dt)
 	end
 end
 
+---update snake
+---@param dt number
 function snake.update(dt)
 	flux.update(dt)
 	tick.update(dt)
@@ -243,48 +180,19 @@ function snake.update(dt)
 	timer = timer + dt
 end
 
----draw grid specified by grid table
----@param grid Grid
----@param color? table
-local function draw_grid(grid, color)
-	lg.push()
-	lg.translate(grid.offset.x, grid.offset.y)
-	lg.setBlendMode("alpha")
-	lg.setColor(0.2, 0.2, 0.4, 0.5)
-	for i = 0, grid.columns do
-		lg.rectangle("fill", i * grid.unit, 0, grid.line_width, grid.height)
-	end
-	for i = 0, grid.rows do
-		lg.rectangle("fill", 0, i * grid.unit, grid.width, grid.line_width)
-	end
-	lg.pop()
-end
-
----draw cell at grid index defined by x, y
----@param grid Grid
----@param x number horizontal index
----@param y number vertical index
-local function draw_cell(grid, x, y)
-	lg.push()
-	lg.setColor(1, 1, 1)
-	lg.translate(grid.unit * (x - 0.5), grid.unit * (y - 0.5))
-	lg.rectangle("fill", grid.cell.offset.x, grid.cell.offset.y, grid.cell.unit, grid.cell.unit)
-	lg.pop()
-end
-
 ---draw snake
 ---@param assets table
 function snake.draw(assets)
 	lg.push()
-	draw_grid(snake.grid)
+	grid.draw(snake.grid)
 	if snake.state == SNAKE_STATE.ALIVE then
 		lg.setShader(assets.rainbow_shader)
 	end
 	if snake.visible then
-		lg.translate(snake.grid.offset.x, snake.grid.offset.y + snake.grid.line_width)
+		lg.translate(snake.grid.offset.x, snake.grid.offset.y)
 		for i = #snek, 1, -1 do
 			assets.rainbow_shader:send("time", GAME.time - i * 0.1)
-			draw_cell(snake.grid, snek[i].x, snek[i].y)
+			grid.draw_cell(snake.grid, snek[i].x, snek[i].y)
 		end
 	end
 	lg.setShader()
