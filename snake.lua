@@ -62,35 +62,39 @@ move_snek_to_default()
 
 ---advance snake state
 ---@param move SnakeMove
-local function advance_snake(move)
+function snake:advance(move)
 	local next = { x = snek[1].x + move.x, y = snek[1].y + move.y }
-	local tween_group = snake.tweens
 	for i = #snek, 2, -1 do
 		local prev = snek[i - 1]
 		-- update body segment locations, back to front
 		--snek[i].x, snek[i].y = prev.x, prev.y
-		tween_group:to(snek[i], snake.frame_interval * 0.3, prev):delay(((i - 1) / (#snek * 2)) * snake.frame_interval)
+		self.tweens:to(snek[i], self.frame_interval * 0.3, prev):delay(((i - 1) / (#snek * 2)) * self.frame_interval)
 		-- detect collision with self
 		if next.x == prev.x and next.y == prev.y then
-			tick.delay(snake.flash_interval, function()
-				snake.state = SNAKE_STATE.COLLISION
+			tick.delay(self.flash_interval, function()
+				self.state = SNAKE_STATE.COLLISION
 			end)
 		end
 	end
 	-- update head location
-	tween_group:to(snek[1], snake.frame_interval * 0.3, {
-		x = index_modulo(next.x, snake.grid.columns),
-		y = index_modulo(next.y, snake.grid.rows),
+	self.tweens:to(snek[1], self.frame_interval * 0.3, {
+		x = index_modulo(next.x, self.grid.columns),
+		y = index_modulo(next.y, self.grid.rows),
 	})
 end
 
-local function kill_snake()
-	snake.state = SNAKE_STATE.DEAD
-	snake.tweens = flux.group()
-	local dead_zone = snake.grid.rows + 10
+local timer = 0
+local hold_timer = 0
+local respawn_timer = 3
+
+function snake:kill(dt)
+	self.state = SNAKE_STATE.DEAD
+	self.tweens = flux.group()
+	local dead_zone = self.grid.rows + 10
 	for i = 1, #snek, 1 do
-		snake.tweens:to(snek[i], 1, { y = dead_zone }):ease("backin"):delay(0.3 + 0.1 * (#snek - i))
+		self.tweens:to(snek[i], 1, { y = dead_zone }):ease("backin"):delay(0.3 + 0.1 * (#snek - i))
 	end
+	timer = timer + dt
 end
 
 ---@type SnakeMove
@@ -105,33 +109,36 @@ local function toggle_visibility()
 end
 
 ---respawn snake
-local function respawn_snake()
-	snake.state = SNAKE_STATE.RESPAWN
-	snake.tweens = flux.group()
+---@param dt number
+function snake:respawn(dt)
+	if timer < respawn_timer then
+		timer = timer + dt
+		return
+	end
+	self.state = SNAKE_STATE.RESPAWN
+	self.tweens = flux.group()
 	for i = 1, #snek do
-		snake.tweens:to(snek[i], snake.frame_interval, snek_default[i]):ease("quadout")
+		self.tweens:to(snek[i], self.frame_interval, snek_default[i]):ease("quadout")
 	end
 	last_input = { x = 1, y = 0 }
 	next_move = last_input
 	last_move = last_input
-	tick.delay(3 * snake.flash_interval, toggle_visibility)
-		:after(snake.flash_interval, toggle_visibility)
-		:after(snake.flash_interval, toggle_visibility)
-		:after(snake.flash_interval, toggle_visibility)
-		:after(snake.flash_interval, toggle_visibility)
-		:after(snake.flash_interval, function()
+	tick.delay(3 * self.flash_interval, toggle_visibility)
+		:after(self.flash_interval, toggle_visibility)
+		:after(self.flash_interval, toggle_visibility)
+		:after(self.flash_interval, toggle_visibility)
+		:after(self.flash_interval, toggle_visibility)
+		:after(self.flash_interval, function()
 			toggle_visibility()
-			snake.tweens = flux.group()
-			snake.state = SNAKE_STATE.ALIVE
+			self.tweens = flux.group()
+			self.state = SNAKE_STATE.ALIVE
 		end)
+	timer = timer + dt - respawn_timer
 end
-
-local timer = 0
-local hold_timer = 0
 
 ---interpret input and control snake
 ---@param dt number
-local function control_snake(dt)
+function snake:control(dt)
 	local x, y = input:get("move")
 	if not x or not y then
 		print("invalid input")
@@ -154,49 +161,51 @@ local function control_snake(dt)
 		next_move = last_input
 	end
 
-	if timer >= snake.frame_interval then
-		advance_snake(next_move)
+	if timer >= self.frame_interval then
+		self:advance(next_move)
 		last_move = next_move
-		timer = timer - snake.frame_interval
+		timer = timer - self.frame_interval
 		hold_timer = 0
-	end
-end
-
----update snake
----@param dt number
-function snake.update(dt)
-	flux.update(dt)
-	tick.update(dt)
-	snake.tweens:update(dt)
-
-	if snake.state == SNAKE_STATE.COLLISION then
-		kill_snake()
-	elseif snake.state == SNAKE_STATE.RESPAWN then
-		return
-	elseif snake.state == SNAKE_STATE.DEAD then
-		if timer >= 3 then
-			respawn_snake()
-			timer = timer - 3
-		end
-	elseif snake.state == SNAKE_STATE.ALIVE then
-		control_snake(dt)
 	end
 	timer = timer + dt
 end
 
+snake.state_machine = {
+	[SNAKE_STATE.ALIVE] = function(dt)
+		snake:control(dt)
+	end,
+	[SNAKE_STATE.COLLISION] = function(dt)
+		snake:kill(dt)
+	end,
+	[SNAKE_STATE.RESPAWN] = function(dt) end,
+	[SNAKE_STATE.DEAD] = function(dt)
+		snake:respawn(dt)
+	end,
+}
+
+---update snake
+---@param dt number
+function snake:update(dt)
+	flux.update(dt)
+	tick.update(dt)
+	self.tweens:update(dt)
+
+	self.state_machine[self.state](dt)
+end
+
 ---draw snake
 ---@param assets table
-function snake.draw(assets)
+function snake:draw(assets)
 	lg.push()
-	grid.draw(snake.grid)
-	if snake.state == SNAKE_STATE.ALIVE then
+	grid.draw(self.grid)
+	if self.state == SNAKE_STATE.ALIVE then
 		lg.setShader(assets.rainbow_shader)
 	end
-	if snake.visible then
-		lg.translate(snake.grid.offset.x, snake.grid.offset.y)
+	if self.visible then
+		lg.translate(self.grid.offset.x, self.grid.offset.y)
 		for i = #snek, 1, -1 do
 			assets.rainbow_shader:send("time", GAME.time - i * 0.1)
-			grid.draw_cell(snake.grid, snek[i].x, snek[i].y)
+			grid.draw_cell(self.grid, snek[i].x, snek[i].y)
 		end
 	end
 	lg.setShader()
