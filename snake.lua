@@ -22,12 +22,22 @@ local snake = {
 	state = SNAKE_STATE.ALIVE,
 	---@type boolean
 	visible = true,
-	---@type number
-	frame_interval = 0.425,
-	---@type number
-	flash_interval = 0.425 * 0.5,
 	---@type Grid
 	grid = grid.generate(30, 16, GAME.width, GAME.height, 0.1, grid.ALIGN.CENTER, grid.ALIGN.BOTTOM),
+	---@type table<string, number>
+	intervals = {
+		frame = 0.425,
+		flash = 0.425 * 0.5,
+		hold = 0.425 * 0.3,
+		respawn = 3,
+	},
+	---@type table<string, number>
+	timestamps = {
+		death = 0,
+		frame = 0,
+		hold = 0,
+		respawn = 0,
+	},
 }
 
 snake.tweens:tick(tick)
@@ -68,33 +78,31 @@ function snake:advance(move)
 		local prev = snek[i - 1]
 		-- update body segment locations, back to front
 		--snek[i].x, snek[i].y = prev.x, prev.y
-		self.tweens:to(snek[i], self.frame_interval * 0.3, prev):delay(((i - 1) / (#snek * 2)) * self.frame_interval)
+		self.tweens:to(snek[i], self.intervals.frame * 0.3, prev):delay(((i - 1) / (#snek * 2)) * self.intervals.frame)
 		-- detect collision with self
 		if next.x == prev.x and next.y == prev.y then
-			tick.delay(self.flash_interval, function()
+			tick.delay(self.intervals.flash, function()
 				self.state = SNAKE_STATE.COLLISION
 			end)
 		end
 	end
 	-- update head location
-	self.tweens:to(snek[1], self.frame_interval * 0.3, {
+	self.tweens:to(snek[1], self.intervals.frame * 0.3, {
 		x = index_modulo(next.x, self.grid.columns),
 		y = index_modulo(next.y, self.grid.rows),
 	})
 end
 
 local timer = 0
-local hold_timer = 0
-local respawn_timer = 3
 
 function snake:kill(dt)
+	snake.timestamps.death = timer
 	self.state = SNAKE_STATE.DEAD
 	self.tweens = flux.group()
 	local dead_zone = self.grid.rows + 10
 	for i = 1, #snek, 1 do
 		self.tweens:to(snek[i], 1, { y = dead_zone }):ease("backin"):delay(0.3 + 0.1 * (#snek - i))
 	end
-	timer = timer + dt
 end
 
 ---@type SnakeMove
@@ -111,29 +119,29 @@ end
 ---respawn snake
 ---@param dt number
 function snake:respawn(dt)
-	if timer < respawn_timer then
-		timer = timer + dt
+	if timer - self.timestamps.death < self.intervals.respawn then
 		return
 	end
+	self.timestamps.respawn = timer
 	self.state = SNAKE_STATE.RESPAWN
 	self.tweens = flux.group()
 	for i = 1, #snek do
-		self.tweens:to(snek[i], self.frame_interval, snek_default[i]):ease("quadout")
+		self.tweens:to(snek[i], self.intervals.frame, snek_default[i]):ease("quadout")
 	end
 	last_input = { x = 1, y = 0 }
 	next_move = last_input
 	last_move = last_input
-	tick.delay(3 * self.flash_interval, toggle_visibility)
-		:after(self.flash_interval, toggle_visibility)
-		:after(self.flash_interval, toggle_visibility)
-		:after(self.flash_interval, toggle_visibility)
-		:after(self.flash_interval, toggle_visibility)
-		:after(self.flash_interval, function()
+	tick.delay(3 * self.intervals.flash, toggle_visibility)
+		:after(self.intervals.flash, toggle_visibility)
+		:after(self.intervals.flash, toggle_visibility)
+		:after(self.intervals.flash, toggle_visibility)
+		:after(self.intervals.flash, toggle_visibility)
+		:after(self.intervals.flash, function()
 			toggle_visibility()
 			self.tweens = flux.group()
 			self.state = SNAKE_STATE.ALIVE
+			self.timestamps.frame = timer
 		end)
-	timer = timer + dt - respawn_timer
 end
 
 ---interpret input and control snake
@@ -144,30 +152,28 @@ function snake:control(dt)
 		print("invalid input")
 	elseif (x ~= 0 and y ~= 0) or (x == 0 and y == 0) or (x == -last_move.x and y == -last_move.y) then
 		-- do nothing - prevent diagonal movement or 180 deg turn
-		hold_timer = 0
+		self.timestamps.hold = timer
 		next_move = last_input
 	elseif x == last_input.x and y == last_input.y then
 		-- same direction held
-		if hold_timer >= snake.frame_interval * 0.25 then
+		if timer - self.timestamps.hold >= self.intervals.hold then
 			next_move = { x = x * 2, y = y * 2 }
 		else
 			next_move = last_input
 		end
-		hold_timer = hold_timer + dt
 	else
 		-- new direction
-		hold_timer = 0
+		self.timestamps.hold = timer
 		last_input = { x = x, y = y }
 		next_move = last_input
 	end
 
-	if timer >= self.frame_interval then
+	if timer - self.timestamps.frame >= self.intervals.frame then
 		self:advance(next_move)
 		last_move = next_move
-		timer = timer - self.frame_interval
-		hold_timer = 0
+		self.timestamps.hold = timer
+		self.timestamps.frame = timer
 	end
-	timer = timer + dt
 end
 
 snake.state_machine = {
@@ -186,6 +192,7 @@ snake.state_machine = {
 ---update snake
 ---@param dt number
 function snake:update(dt)
+	timer = timer + dt
 	flux.update(dt)
 	tick.update(dt)
 	self.tweens:update(dt)
