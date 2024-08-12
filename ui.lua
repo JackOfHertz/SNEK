@@ -207,7 +207,6 @@ function ui.update()
 			close_menu()
 		elseif GAME.state == STATE.PAUSE then
 			continue()
-			return
 		end
 		return
 	end
