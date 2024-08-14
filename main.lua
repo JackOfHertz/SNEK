@@ -24,7 +24,6 @@ function love.load()
 	assets.water_shader:send("amp", 0.03)
 
 	assets.rainbow_shader = lg.newShader("shaders/rainbow.glsl")
-	assets.noop_shader = lg.newShader("shaders/noop.glsl")
 
 	push:setupCanvas({
 		{ name = "base_canvas" },
