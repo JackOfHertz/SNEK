@@ -41,7 +41,8 @@ local snake = {
 	---@type boolean
 	visible = true,
 	---@type Grid
-	grid = grid.generate(30, 16, GAME.width, GAME.height, 0.1, grid.ALIGN.CENTER, grid.ALIGN.BOTTOM),
+	--grid = grid.generate(30, 16, GAME.width, GAME.height, 0.1, grid.ALIGN.CENTER, grid.ALIGN.BOTTOM),
+	grid = grid.generate(35, 20, GAME.width, GAME.height, 0.1, grid.ALIGN.CENTER, grid.ALIGN.BOTTOM),
 	---@type table<string, number>
 	interval = {
 		frame = 0.425,
@@ -72,9 +73,6 @@ local snake = {
 
 -- connect flux and tick instances
 snake.tweens:tick(tick)
-
----@type Coordinates[]
-local snek = lume.map(snek_default, lume.clone)
 
 ---advance snake state
 ---@private
@@ -180,44 +178,71 @@ function snake:control(dt)
 end
 
 snake.state_machine = {
-	[SNAKE_STATE.ALIVE] = function(dt)
-		snake:control(dt)
+	[SNAKE_STATE.ALIVE] = function(self, dt, assets)
+		self.shader = assets.rainbow_shader
+		self.shader_amplitude = 1
+		self:control(dt)
 	end,
-	[SNAKE_STATE.COLLISION] = function(dt)
-		snake:kill(dt)
+	[SNAKE_STATE.COLLISION] = function(self, dt, assets)
+		self.shader = assets.water_shader
+		self.shader_amplitude = 0.2
+		self:kill(dt)
 	end,
-	[SNAKE_STATE.RESPAWN] = function(dt) end,
-	[SNAKE_STATE.DEAD] = function(dt)
-		snake:respawn(dt)
+	[SNAKE_STATE.RESPAWN] = function(self, dt, assets)
+		self.shader = assets.water_shader
+		self.shader_amplitude = 0.4
+	end,
+	[SNAKE_STATE.DEAD] = function(self, dt, assets)
+		self.shader = assets.water_shader
+		self:respawn(dt)
 	end,
 }
 
+function snake:load()
+	snake.head_img = lg.newImage("assets/img/snake_head.png")
+	snake.body_img = lg.newImage("assets/img/snake_body.png")
+end
+
 ---update snake
 ---@param dt number
-function snake:update(dt)
+---@param assets any
+function snake:update(dt, assets)
 	timer = timer + dt
 	flux.update(dt)
 	tick.update(dt)
 	self.tweens:update(dt)
 
-	self.state_machine[self.state](dt)
+	self.state_machine[self.state](self, dt, assets)
 end
 
 ---draw snake
 ---@param assets table
 function snake:draw(assets)
-	lg.push()
 	grid.draw(self.grid)
-	if self.state == SNAKE_STATE.ALIVE then
-		lg.setShader(assets.rainbow_shader)
+	if not self.visible then
+		return
 	end
-	if self.visible then
-		lg.translate(self.grid.offset.x, self.grid.offset.y)
-		for i = #self.body, 1, -1 do
-			assets.rainbow_shader:send("time", GAME.time - i * 0.1)
-			grid.draw_cell(self.grid, self.body[i].x, self.body[i].y)
-		end
+	lg.push()
+	lg.setShader(self.shader)
+	lg.translate(self.grid.offset.x, self.grid.offset.y)
+	lg.setColor(1, 1, 1, 1)
+	self.shader:send("amp", self.shader_amplitude)
+	for i = #self.body, 2, -1 do
+		self.shader:send("time", GAME.time - i * 0.1)
+		local diff = {
+			x = self.body[i - 1].x - self.body[math.min(i + 1, #self.body)].x,
+			y = self.body[i - 1].y - self.body[math.min(i + 1, #self.body)].y,
+		}
+		grid.draw_cell_img(self.grid, self.body[i].x, self.body[i].y, self.body_img, math.atan2(diff.y, diff.x))
 	end
+	self.shader:send("time", GAME.time - 0.1)
+	grid.draw_cell_img(
+		self.grid,
+		self.body[1].x,
+		self.body[1].y,
+		self.head_img,
+		math.atan2(self.move.next.y, self.move.next.x)
+	)
 	lg.setShader()
 	lg.pop()
 end

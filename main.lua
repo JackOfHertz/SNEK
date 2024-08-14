@@ -21,14 +21,17 @@ function love.load()
 	assets.simplex = lg.newImage("shaders/simplex-noise-64.png")
 	assets.water_shader = lg.newShader("shaders/water.glsl")
 	assets.water_shader:send("simplex", assets.simplex)
+	assets.water_shader:send("amp", 0.03)
 
 	assets.rainbow_shader = lg.newShader("shaders/rainbow.glsl")
+	assets.noop_shader = lg.newShader("shaders/noop.glsl")
 
 	push:setupCanvas({
 		{ name = "base_canvas" },
 		{ name = "game_canvas" },
 		{ name = "ui_canvas" },
 	})
+	snake:load()
 end
 
 function love.update(dt)
@@ -42,7 +45,7 @@ function love.update(dt)
 	if GAME.state == STATE.PAUSE then
 		return
 	end
-	snake:update(dt)
+	snake:update(dt, assets)
 end
 
 function love.draw()

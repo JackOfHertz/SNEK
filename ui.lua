@@ -149,6 +149,7 @@ local function draw_menu(menu, assets)
 
 	-- text
 	lg.setShader(assets.water_shader)
+	assets.water_shader:send("amp", 0.03)
 
 	-- title
 	lg.setFont(assets.title_font)

@@ -1,6 +1,7 @@
 #pragma language glsl3
 
 uniform float time;
+uniform float amp;
 uniform Image simplex;
 //uniform Image mask;
 
@@ -13,7 +14,6 @@ vec4 effect(
   float noise_width = 64;
   float sprite_width = 64;
   float speed = 0.05 * (sprite_width / noise_width);
-  float amp = 0.03;
 
   vec2 noise_time_index = fract(texture_coords * (sprite_width / noise_width) + vec2(speed * time, -speed * time));
   vec4 noisecolor = Texel(simplex, noise_time_index);

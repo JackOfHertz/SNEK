@@ -11,6 +11,8 @@ grid.ALIGN = {
 	BOTTOM = 1,
 }
 
+local math_ceil = math.ceil
+
 ---@class Cell
 ---@field unit integer
 ---@field offset Coordinates
@@ -37,7 +39,8 @@ grid.ALIGN = {
 ---@return Grid
 function grid.generate(columns, rows, max_width, max_height, line_width_pct, horizontal_align, vertical_align)
 	local unit = math.floor(max_width / columns)
-	local line_width = math.ceil(unit * line_width_pct)
+	--local unit = 8
+	local line_width = math_ceil(unit * line_width_pct)
 	local width = unit * columns + line_width
 	local height = rows * unit + line_width
 
@@ -48,16 +51,16 @@ function grid.generate(columns, rows, max_width, max_height, line_width_pct, hor
 		height = rows * unit + line_width,
 		unit = unit,
 		line_width = line_width,
-		color = { 0.2, 0.2, 0.4, 0.5 },
+		color = { 1, 1, 1, 0.2 },
 		offset = {
-			x = (max_width - width) * (horizontal_align or grid.ALIGN.CENTER),
-			y = (max_height - height) * (vertical_align or grid.ALIGN.CENTER),
+			x = math_ceil((max_width - width) * (horizontal_align or grid.ALIGN.CENTER)),
+			y = math_ceil((max_height - height) * (vertical_align or grid.ALIGN.CENTER)),
 		},
 		cell = {
 			unit = unit - line_width,
 			offset = {
-				x = line_width - unit * 0.5,
-				y = line_width - unit * 0.5,
+				x = line_width - math_ceil(unit * 0.5),
+				y = line_width - math_ceil(unit * 0.5),
 			},
 		},
 	}
@@ -86,8 +89,15 @@ end
 function grid.draw_cell(g, x, y)
 	lg.push()
 	lg.setColor(1, 1, 1)
-	lg.translate(g.unit * (x - 0.5), g.unit * (y - 0.5))
+	lg.translate(math_ceil(g.unit * (x - 0.5)), math_ceil(g.unit * (y - 0.5)))
 	lg.rectangle("fill", g.cell.offset.x, g.cell.offset.y, g.cell.unit, g.cell.unit)
+	lg.pop()
+end
+
+function grid.draw_cell_img(g, x, y, img, r, ox, oy)
+	lg.push()
+	lg.translate(math_ceil(g.unit * (x - 0.5)), math_ceil(g.unit * (y - 0.5)))
+	lg.draw(img, ox and ox or 0, oy and oy or 0, r, 1.0, 1.0, -g.cell.offset.x, -g.cell.offset.y)
 	lg.pop()
 end
 
