@@ -97,7 +97,7 @@ end
 function grid.draw_cell_img(g, x, y, img, r, ox, oy)
 	lg.push()
 	lg.translate(math_ceil(g.unit * (x - 0.5)), math_ceil(g.unit * (y - 0.5)))
-	lg.draw(img, ox and ox or 0, oy and oy or 0, r, 1.0, 1.0, -g.cell.offset.x, -g.cell.offset.y)
+	lg.draw(img, ox, oy, r, 1.0, 1.0, -g.cell.offset.x, -g.cell.offset.y)
 	lg.pop()
 end
 

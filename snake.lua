@@ -79,11 +79,20 @@ snake.tweens:tick(tick)
 function snake:advance()
 	local body = self.body
 	local next = { x = body[1].x + self.move.next.x, y = body[1].y + self.move.next.y }
+	local duration_pct = 0.0
+	local delay_pct = 0.0
 	for i = #body, 2, -1 do
 		local prev = body[i - 1]
 		-- update body segment locations, back to front
 		--snek[i].x, snek[i].y = prev.x, prev.y
-		self.tweens:to(body[i], self.interval.frame * 0.3, prev):delay(((i - 1) / (#body * 2)) * self.interval.frame)
+		if math.abs(prev.x - body[i].x) > 1 or math.abs(prev.y - body[i].y) > 1 then
+			duration_pct = 0.9
+			delay_pct = (i - 1) / (#body * 5)
+		else
+			duration_pct = 0.3
+			delay_pct = (i - 1) / (#body * 2)
+		end
+		self.tweens:to(body[i], duration_pct * self.interval.frame, prev):delay(delay_pct * self.interval.frame)
 		-- detect collision with self
 		if next.x == prev.x and next.y == prev.y then
 			tick.delay(self.interval.collision, function()
@@ -238,7 +247,15 @@ function snake:draw(assets)
 			x = self.body[i - 1].x - self.body[math.min(i + 1, #self.body)].x,
 			y = self.body[i - 1].y - self.body[math.min(i + 1, #self.body)].y,
 		}
-		grid.draw_cell_img(self.grid, self.body[i].x, self.body[i].y, self.body_img, math.atan2(diff.y, diff.x))
+		grid.draw_cell_img(
+			self.grid,
+			self.body[i].x,
+			self.body[i].y,
+			self.body_img,
+			math.atan2(diff.y, diff.x),
+			math.abs(diff.x) >= 1.9 and 0 or self.body[i].y ~= self.body[i - 1].y and -diff.x or diff.x,
+			math.abs(diff.y) >= 1.9 and 0 or self.body[i].x ~= self.body[i - 1].x and -diff.y or diff.y
+		)
 	end
 	self.shader:send("time", GAME.time - 0.1)
 	grid.draw_cell_img(
@@ -246,7 +263,9 @@ function snake:draw(assets)
 		self.body[1].x,
 		self.body[1].y,
 		self.head_img,
-		math.atan2(self.move.next.y, self.move.next.x)
+		math.atan2(self.move.next.y, self.move.next.x),
+		0,
+		0
 	)
 	lg.setShader()
 	lg.pop()
