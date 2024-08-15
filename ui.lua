@@ -1,7 +1,7 @@
 local lume = require("lib.lume")
 
 require("globals")
-require("util")
+local util = require("util")
 
 local next = next
 local lg = love.graphics
@@ -128,7 +128,7 @@ local confirm_buffer = 0
 local function update_menu(menu)
 	local down, up = input:pressed("down"), input:pressed("up")
 	local confirm = input:released("confirm")
-	menu.active_index = index_modulo(menu.active_index + (down and 1 or up and -1 or 0), #menu.options)
+	menu.active_index = util.i_modulo(menu.active_index + (down and 1 or up and -1 or 0), #menu.options)
 	if confirm and confirm_buffer >= 5 then
 		menu.options[menu.active_index].callback()
 		confirm_buffer = 0

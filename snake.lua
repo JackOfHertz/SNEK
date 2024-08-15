@@ -3,7 +3,7 @@ local flux = require("lib.flux")
 local tick = require("lib.tick")
 
 require("globals")
-require("util")
+local util = require("util")
 local grid = require("util.grid")
 
 local lg = love.graphics
@@ -92,9 +92,14 @@ function snake:advance()
 		end
 	end
 	-- update head location
-	self.tweens:to(body[1], self.interval.frame * 0.3, {
-		x = index_modulo(next.x, self.grid.columns),
-		y = index_modulo(next.y, self.grid.rows),
+	if math.abs(self.move.next.x) > 1 or math.abs(self.move.next.y) > 1 then
+		duration_pct = 0.9
+	else
+		duration_pct = 0.3
+	end
+	self.tweens:to(body[1], duration_pct * self.interval.frame, {
+		x = util.i_modulo(next.x, self.grid.columns),
+		y = util.i_modulo(next.y, self.grid.rows),
 	})
 end
 
