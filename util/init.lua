@@ -11,5 +11,6 @@ end
 ---@class Coordinates
 ---@field x integer
 ---@field y integer
+---@field z? integer
 
 return util

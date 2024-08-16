@@ -1,4 +1,5 @@
-require("lib.lovedebug")
+---@module "love"
+--require("lib.lovedebug")
 
 require("globals")
 local ui = require("ui")
@@ -30,7 +31,7 @@ function love.load()
 		{ name = "game_canvas" },
 		{ name = "ui_canvas" },
 	})
-	snake:load()
+	snake:load(assets)
 end
 
 function love.update(dt)
@@ -44,7 +45,7 @@ function love.update(dt)
 	if GAME.state == STATE.PAUSE then
 		return
 	end
-	snake:update(dt, assets)
+	snake:update(dt)
 end
 
 function love.draw()
@@ -54,7 +55,7 @@ function love.draw()
 	lg.rectangle("fill", 0, 0, GAME.width, GAME.height)
 
 	push:setCanvas("game_canvas")
-	snake:draw(assets)
+	snake:draw()
 
 	push:setCanvas("ui_canvas")
 	ui.draw(assets)
