@@ -13,4 +13,7 @@ end
 ---@field y integer
 ---@field z? integer
 
+---@return nil
+function util.noop() end
+
 return util

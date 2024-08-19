@@ -1,5 +1,5 @@
 ---@module "love"
---require("lib.lovedebug")
+require("lib.lovedebug")
 
 require("globals")
 local ui = require("ui")
